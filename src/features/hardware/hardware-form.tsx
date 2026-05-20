@@ -52,8 +52,8 @@ export function HardwareForm({
       category,
       location: location.trim() || undefined,
       status,
-      staff_id: staffId || undefined,
-      vendor_id: vendorId || undefined
+      staff_id: staffId === "" ? null : staffId,
+      vendor_id: vendorId === "" ? null : vendorId
     };
 
     try {

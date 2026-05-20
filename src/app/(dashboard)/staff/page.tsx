@@ -4,10 +4,12 @@ import * as React from "react";
 import { useState, useEffect } from "react";
 import { 
   getStaffAction, 
+  getStaffDetailAction,
   deleteStaffAction 
 } from "@/app/actions/staff";
 import { StaffTable } from "@/features/staff/staff-table";
 import { StaffForm } from "@/features/staff/staff-form";
+import { StaffDetail } from "@/types/database.types";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -39,6 +41,9 @@ export default function StaffPage() {
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState<StaffDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   // Notification
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -113,6 +118,26 @@ export default function StaffPage() {
       showNotification("error", err.message || "Failed to delete employee record.");
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const handleRowClick = async (item: any) => {
+    setDetailOpen(true);
+    setDetailItem(null);
+    setDetailLoading(true);
+
+    try {
+      const res = await getStaffDetailAction(item.id);
+      if (res.success && res.data) {
+        setDetailItem(res.data);
+      } else {
+        setDetailItem(null);
+        showNotification("error", res.error || "Failed to load staff details.");
+      }
+    } catch (err: any) {
+      showNotification("error", err.message || "Failed to load staff details.");
+    } finally {
+      setDetailLoading(false);
     }
   };
 
@@ -218,9 +243,126 @@ export default function StaffPage() {
         <StaffTable 
           items={items} 
           onEdit={handleEditOpen} 
-          onDelete={handleDeleteOpen} 
+          onDelete={handleDeleteOpen}
+          onRowClick={handleRowClick}
         />
       )}
+
+      <Dialog open={detailOpen} onOpenChange={(open) => {
+        setDetailOpen(open);
+        if (!open) {
+          setDetailItem(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-foreground">
+              Staff Detail Overview
+            </DialogTitle>
+            <DialogDescription className="text-sm font-medium text-muted-foreground">
+              Review assigned assets and email accounts for the selected employee.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {detailLoading ? (
+              <div className="flex flex-col items-center justify-center p-14 rounded-xl border border-border bg-card">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
+                <p className="text-sm font-semibold text-muted-foreground">Loading staff details...</p>
+              </div>
+            ) : detailItem ? (
+              <div className="space-y-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Employee</p>
+                    <h3 className="text-base font-bold text-foreground mt-2">{detailItem.full_name}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{detailItem.employee_id}</p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Role</p>
+                    <h3 className="text-base font-bold text-foreground mt-2">{detailItem.position}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{detailItem.department}</p>
+                    <p className={`mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+                      detailItem.status === "ACTIVE"
+                        ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                        : detailItem.status === "ON LEAVE"
+                        ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                        : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                    }`}>
+                      {detailItem.status}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-3">
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <h4 className="text-sm font-semibold text-foreground">Assigned Hardware</h4>
+                    {detailItem.hardware.length > 0 ? (
+                      <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                        {detailItem.hardware.map((item) => (
+                          <li key={item.id} className="rounded-lg border border-border bg-muted/70 px-3 py-2">
+                            <div className="font-semibold text-foreground">{item.name}</div>
+                            <div>{item.category}</div>
+                            <div className="text-[11px] text-muted-foreground">{item.status}</div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-3 text-sm text-muted-foreground">No hardware assets assigned.</p>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <h4 className="text-sm font-semibold text-foreground">Assigned Software</h4>
+                    {detailItem.software.length > 0 ? (
+                      <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                        {detailItem.software.map((item) => (
+                          <li key={item.id} className="rounded-lg border border-border bg-muted/70 px-3 py-2">
+                            <div className="font-semibold text-foreground">{item.name}</div>
+                            <div>{item.license_key ? `License: ${item.license_key}` : item.expiration_date ? `Expires: ${item.expiration_date}` : "Software assignment"}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {item.item_code ? `Code: ${item.item_code}` : item.expiration_date ? `Expires ${item.expiration_date}` : "No additional details"}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-3 text-sm text-muted-foreground">No software assigned.</p>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <h4 className="text-sm font-semibold text-foreground">Assigned Email Accounts</h4>
+                    {detailItem.emails.length > 0 ? (
+                      <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                        {detailItem.emails.map((item) => (
+                          <li key={item.id} className="rounded-lg border border-border bg-muted/70 px-3 py-2">
+                            <div className="font-semibold text-foreground">{item.email_address}</div>
+                            <div>{item.platform}</div>
+                            <div className="text-[11px] text-muted-foreground">{item.status}</div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-3 text-sm text-muted-foreground">No email accounts assigned.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-border bg-card p-8 text-center">
+                <p className="text-sm font-semibold text-muted-foreground">Staff details could not be loaded.</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex items-center justify-end gap-2 pt-4 border-t border-border mt-4">
+            <Button onClick={() => setDetailOpen(false)} className="h-9 px-4 rounded-lg bg-primary text-white font-semibold hover:bg-primary/90">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Form Modal */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>

@@ -12,6 +12,15 @@ export async function getStaffAction(filters?: { query?: string }) {
   }
 }
 
+export async function getStaffDetailAction(id: string) {
+  try {
+    const data = await StaffService.getStaffDetailById(id);
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to retrieve staff details." };
+  }
+}
+
 export async function createStaffAction(data: any) {
   try {
     const newStaff = await StaffService.createStaff(data);

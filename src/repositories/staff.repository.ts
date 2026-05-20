@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { Staff } from "@/types/database.types";
+import { EmailAccount, Hardware, Software, Staff, StaffDetail } from "@/types/database.types";
 
 export class StaffRepository {
   /**
@@ -47,6 +47,56 @@ export class StaffRepository {
     }
 
     return data as Staff;
+  }
+
+  /**
+   * Find a staff member with assigned hardware, software, and email accounts.
+   */
+  static async findDetailById(id: string): Promise<StaffDetail | null> {
+    const staff = await this.findById(id);
+    if (!staff) {
+      return null;
+    }
+
+    const [hardwareRes, softwareRes, emailRes] = await Promise.all([
+      supabase
+        .from("hardware")
+        .select("*")
+        .eq("staff_id", id)
+        .order("name"),
+      supabase
+        .from("software")
+        .select("*")
+        .eq("staff_id", id)
+        .order("name"),
+      supabase
+        .from("emails")
+        .select("*")
+        .eq("staff_id", id)
+        .order("email_address")
+    ]);
+
+    if (hardwareRes.error) {
+      console.error("Error in StaffRepository.findDetailById (hardware):", hardwareRes.error);
+      throw new Error(`Failed to fetch assigned hardware: ${hardwareRes.error.message}`);
+    }
+
+    if (softwareRes.error) {
+      console.error("Error in StaffRepository.findDetailById (software):", softwareRes.error);
+      throw new Error(`Failed to fetch assigned software: ${softwareRes.error.message}`);
+    }
+
+    if (emailRes.error) {
+      console.error("Error in StaffRepository.findDetailById (emails):", emailRes.error);
+      throw new Error(`Failed to fetch assigned emails: ${emailRes.error.message}`);
+    }
+
+    return {
+      ...staff,
+      hardware: hardwareRes.data || [],
+      software: softwareRes.data || [],
+      emails: emailRes.data || [],
+    };
   }
 
   /**
