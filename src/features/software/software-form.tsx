@@ -50,8 +50,8 @@ export function SoftwareForm({
       name: name.trim(),
       license_key: licenseKey.trim() || undefined,
       expiration_date: expirationDate || undefined,
-      staff_id: staffId || undefined,
-      vendor_id: vendorId || undefined
+      staff_id: staffId === "" ? null : staffId,
+      vendor_id: vendorId === "" ? null : vendorId
     };
 
     try {

@@ -17,9 +17,10 @@ interface StaffTableProps {
   items: Staff[];
   onEdit: (item: Staff) => void;
   onDelete: (id: string) => void;
+  onRowClick?: (item: Staff) => void;
 }
 
-export function StaffTable({ items, onEdit, onDelete }: StaffTableProps) {
+export function StaffTable({ items, onEdit, onDelete, onRowClick }: StaffTableProps) {
   const [sortColumn, setSortColumn] = React.useState<string>("name");
   const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("asc");
 
@@ -151,7 +152,7 @@ export function StaffTable({ items, onEdit, onDelete }: StaffTableProps) {
         </TableHeader>
         <TableBody>
           {sortedItems.map((item) => (
-            <TableRow key={item.id} className="group hover:bg-muted/40 transition-colors">
+            <TableRow key={item.id} onClick={() => onRowClick?.(item)} className="group hover:bg-muted/40 transition-colors cursor-pointer">
               {/* Employee ID & Name */}
               <TableCell className="pl-4 py-3">
                 <div className="flex flex-col leading-tight">
@@ -183,7 +184,10 @@ export function StaffTable({ items, onEdit, onDelete }: StaffTableProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onEdit(item)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onEdit(item);
+                    }}
                     className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md"
                   >
                     <Edit2 className="h-3.5 w-3.5" />
@@ -191,7 +195,10 @@ export function StaffTable({ items, onEdit, onDelete }: StaffTableProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onDelete(item.id)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDelete(item.id);
+                    }}
                     className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-md"
                   >
                     <Trash2 className="h-3.5 w-3.5" />

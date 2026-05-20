@@ -1,6 +1,6 @@
 import { StaffRepository } from "@/repositories/staff.repository";
 import { StaffValidator } from "@/validators/staff.validator";
-import { Staff } from "@/types/database.types";
+import { Staff, StaffDetail } from "@/types/database.types";
 
 export class StaffService {
   /**
@@ -18,6 +18,16 @@ export class StaffService {
       throw new Error("Staff ID is required.");
     }
     return await StaffRepository.findById(id);
+  }
+
+  /**
+   * Fetch a staff member along with assigned hardware, software, and email accounts.
+   */
+  static async getStaffDetailById(id: string): Promise<StaffDetail | null> {
+    if (!id) {
+      throw new Error("Staff ID is required.");
+    }
+    return await StaffRepository.findDetailById(id);
   }
 
   /**

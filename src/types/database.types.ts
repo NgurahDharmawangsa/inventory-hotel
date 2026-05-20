@@ -9,6 +9,12 @@ export type Staff = {
     updated_at?: string;
 };
 
+export type StaffDetail = Staff & {
+    hardware: Hardware[];
+    software: Software[];
+    emails: EmailAccount[];
+};
+
 export type Vendor = {
     id: string;
     name: string;
