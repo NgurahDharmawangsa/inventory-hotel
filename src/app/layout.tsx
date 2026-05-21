@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Syne, Plus_Jakarta_Sans, DM_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, DM_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 
-const syne = Syne({
-  variable: "--font-syne",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -33,9 +33,9 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${plusJakartaSans.variable} ${dmMono.variable} ${syne.variable} h-full antialiased dark`}
+      className={`${plusJakartaSans.variable} ${outfit.variable} ${dmMono.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col font-outfit">{children}</body>
     </html>
   );
 }

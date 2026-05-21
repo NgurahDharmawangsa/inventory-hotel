@@ -89,7 +89,7 @@ export function WelcomeBanner() {
         {/* Five Star Emblem */}
         <div className="flex items-center gap-2">
           <div className="inline-flex items-center gap-1 bg-[rgba(201,163,66,0.12)] border border-[rgba(201,163,66,0.25)] rounded-full px-2.5 py-0.5 shadow-sm">
-            <span className="text-[10px] text-[#c9a342] tracking-wider font-bold">★★★★★</span>
+            {/* <span className="text-[10px] text-[#c9a342] tracking-wider font-bold">★★★★★</span> */}
             <span className="text-[8.5px] text-[#e8c05a] font-mono font-extrabold uppercase tracking-widest pl-1">THE SANKARA SUITES & VILLAS</span>
           </div>
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
