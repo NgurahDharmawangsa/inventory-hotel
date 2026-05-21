@@ -1,0 +1,204 @@
+﻿$code = @'
+"use client";
+
+import { usePathname } from "next/navigation";
+import { Menu, Bell, LogOut, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { Sidebar } from "@/components/layout/sidebar";
+import { navItems } from "@/constants/nav-items";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { logoutAction } from "@/app/actions/auth";
+import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState, useTransition } from "react";
+
+// Helper: Get page title from current pathname
+function getPageTitle(pathname: string): string {
+  if (pathname === "/") return "Dashboard";
+  const matched = navItems.find(
+    (item) => item.href !== "/" && pathname.startsWith(item.href)
+  );
+  return matched?.label ?? "Dashboard";
+}
+
+export function TopNav() {
+  const pathname = usePathname();
+  const pageTitle = getPageTitle(pathname);
+  const [user, setUser] = useState<any>(null);
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUser(user);
+      }
+    });
+  }, []);
+
+  const handleLogout = () => {
+    startTransition(async () => {
+      await logoutAction();
+    });
+  };
+
+  const userEmail = user?.email || "admin@thesankarasuite.com";
+  const userInitials = user?.email
+    ? user.email.split("@")[0].substring(0, 2).toUpperCase()
+    : "IT";
+  const userName = user?.email ? user.email.split("@")[0] : "IT Admin";
+
+  return (
+    <>
+      {/* Full-screen logout overlay */}
+      {isPending && (
+        <div
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-5"
+          style={{
+            background: "rgba(8, 11, 20, 0.88)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+          }}
+        >
+          {/* Spinning gold ring */}
+          <div className="relative flex items-center justify-center">
+            <span
+              className="block rounded-full border-[3px] border-transparent animate-spin"
+              style={{
+                width: 72,
+                height: 72,
+                borderTopColor: "#c9a342",
+                borderRightColor: "rgba(201,163,66,0.25)",
+                borderBottomColor: "rgba(201,163,66,0.25)",
+                borderLeftColor: "rgba(201,163,66,0.25)",
+                animationDuration: "0.8s",
+              }}
+            />
+            <LogOut
+              className="absolute"
+              style={{ color: "#c9a342", width: 26, height: 26 }}
+            />
+          </div>
+
+          {/* Label */}
+          <div className="flex flex-col items-center gap-1 text-center">
+            <p
+              className="font-heading font-extrabold tracking-widest uppercase"
+              style={{ color: "#c9a342", fontSize: 13, letterSpacing: "0.2em" }}
+            >
+              Signing Out
+            </p>
+            <p
+              className="font-mono tracking-widest uppercase"
+              style={{ color: "rgba(201,163,66,0.5)", fontSize: 10 }}
+            >
+              Clearing your session securely...
+            </p>
+          </div>
+
+          {/* Animated dots */}
+          <div className="flex items-center gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="block rounded-full animate-bounce"
+                style={{
+                  width: 6,
+                  height: 6,
+                  background: "#c9a342",
+                  opacity: 0.7,
+                  animationDelay: `${i * 0.15}s`,
+                  animationDuration: "0.8s",
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <header className="flex h-14 items-center gap-4 border-b border-border bg-card px-4 md:px-6">
+        {/* Mobile: Hamburger menu */}
+        <Sheet>
+          <SheetTrigger
+            render={
+              <Button variant="ghost" size="icon" className="md:hidden shrink-0">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle sidebar</span>
+              </Button>
+            }
+          />
+          <SheetContent side="left" className="p-0 w-64">
+            <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+            <Sidebar />
+          </SheetContent>
+        </Sheet>
+
+        {/* Page Title */}
+        <div className="flex-1">
+          <h1 className="text-base font-extrabold text-foreground tracking-wide font-heading">{pageTitle}</h1>
+        </div>
+
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2">
+          {/* Notification Bell */}
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            <span className="sr-only">Notifications</span>
+          </Button>
+
+          <Separator orientation="vertical" className="h-6" />
+
+          {/* User Avatar with Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="flex items-center gap-2 outline-none cursor-pointer rounded-lg p-1.5 hover:bg-muted/40 transition-colors focus:ring-1 focus:ring-primary/20"
+            >
+              <Avatar className="h-8 w-8 border border-border">
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
+                  {userInitials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="hidden md:flex flex-col text-left leading-tight">
+                <span className="text-sm font-medium text-foreground truncate max-w-[120px]">{userName}</span>
+                <span className="text-[10px] text-muted-foreground">Administrator</span>
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 p-1.5 bg-card border border-border rounded-lg shadow-lg">
+              <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                My Profile
+              </div>
+              <div className="px-2 py-1 text-xs text-foreground/80 font-semibold break-all">
+                {userEmail}
+              </div>
+              <DropdownMenuSeparator className="my-1.5 border-t border-border" />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                disabled={isPending}
+                variant="destructive"
+                className="flex items-center gap-2 px-2.5 py-1.5 text-sm cursor-pointer hover:bg-destructive/10 hover:text-destructive rounded-md transition-colors w-full text-left"
+              >
+                {isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <LogOut className="h-4 w-4" />
+                )}
+                <span>{isPending ? "Logging out..." : "Log out"}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+    </>
+  );
+}
+'@
+
+[System.IO.File]::WriteAllText("C:\Users\Rah\Documents\Project\inventory-hotel\src\components\layout\topnav.tsx", $code, [System.Text.Encoding]::UTF8)
