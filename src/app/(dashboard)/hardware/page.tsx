@@ -10,6 +10,7 @@ import {
 import { HardwareWithRelations } from "@/repositories/hardware.repository";
 import { HardwareTable } from "@/features/hardware/hardware-table";
 import { HardwareForm } from "@/features/hardware/hardware-form";
+import { HardwareTableSkeleton } from "@/features/hardware/hardware-skeleton";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -204,10 +205,7 @@ export default function HardwarePage() {
 
       {/* Main Table view */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-24 text-center rounded-xl border border-border bg-card">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-          <p className="text-sm font-semibold text-muted-foreground">Loading hardware inventory database...</p>
-        </div>
+        <HardwareTableSkeleton />
       ) : (
         <HardwareTable 
           items={items} 

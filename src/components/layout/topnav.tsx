@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { logoutAction } from "@/app/actions/auth";
 import { createClient } from "@/lib/supabase/client";
+import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { useEffect, useState, useTransition } from "react";
 
 // Helper: Get page title from current pathname
@@ -56,9 +57,11 @@ export function TopNav() {
   const userName = user?.email ? user.email.split("@")[0] : "IT Admin";
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b border-border bg-card px-4 md:px-6">
-      {/* Mobile: Hamburger menu */}
-      <Sheet>
+    <>
+      <LoadingOverlay isOpen={isPending} message="Logging out..." />
+      <header className="flex h-14 items-center gap-4 border-b border-border bg-card px-4 md:px-6">
+        {/* Mobile: Hamburger menu */}
+        <Sheet>
         <SheetTrigger
           render={
             <Button variant="ghost" size="icon" className="md:hidden shrink-0">
@@ -128,5 +131,6 @@ export function TopNav() {
         </DropdownMenu>
       </div>
     </header>
+    </>
   );
 }
