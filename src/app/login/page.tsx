@@ -1,22 +1,88 @@
 ﻿"use client";
 
 import * as React from "react";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { loginAction } from "@/app/actions/auth";
 import { Loader2, KeyRound, Mail, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
   const [state, action, isPending] = useActionState(loginAction, null);
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
 
   useEffect(() => {
     if (state?.success) {
-      window.location.href = "/";
+      setShowLoadingOverlay(true);
+      // Delay redirect to show loading animation
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1500);
     }
   }, [state]);
 
+  useEffect(() => {
+    if (isPending) {
+      setShowLoadingOverlay(true);
+    } else if (state && !state.success) {
+      setShowLoadingOverlay(false);
+    }
+  }, [isPending, state]);
+
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a0d14] via-[#101524] to-[#05060a] p-4 overflow-hidden">
+    <>
+      {/* Loading Overlay */}
+      {showLoadingOverlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0d14]/95 backdrop-blur-md animate-in fade-in-0 duration-300">
+          {/* Animated background elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-[rgba(201,163,66,0.05)] blur-3xl animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-blue-500/5 blur-3xl animate-pulse" style={{ animationDelay: "700ms" }} />
+          </div>
+
+          {/* Loading content */}
+          <div className="relative z-10 flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500">
+            {/* Spinning loader with glow effect */}
+            <div className="relative">
+              {/* Outer glow ring */}
+              <div className="absolute inset-0 rounded-full bg-[#c9a342]/20 blur-xl animate-pulse" />
+              
+              {/* Main spinner */}
+              <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-[#c9a342]/20 to-transparent border border-[#c9a342]/30 shadow-[0_0_30px_rgba(201,163,66,0.15)]">
+                <Loader2 className="w-10 h-10 text-[#c9a342] animate-spin" strokeWidth={2.5} />
+              </div>
+
+              {/* Rotating ring */}
+              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[#c9a342]/40 animate-spin" style={{ animationDuration: "1.5s" }} />
+            </div>
+
+            {/* Loading text */}
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-sm font-bold text-foreground tracking-wide animate-pulse">
+                {state?.success ? "Login Successful!" : "Verifying Credentials..."}
+              </p>
+              
+              {/* Animated dots */}
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-[#c9a342] animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-2 h-2 rounded-full bg-[#c9a342] animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-2 h-2 rounded-full bg-[#c9a342] animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+            </div>
+
+            {/* Sankara branding */}
+            <div className="mt-4 flex flex-col items-center gap-1 opacity-60">
+              <span className="font-mono text-[9px] font-extrabold text-[#e8c05a] tracking-widest uppercase">
+                The Sankara
+              </span>
+              <span className="font-mono text-[8px] text-muted-foreground/60 tracking-widest uppercase">
+                IT System
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a0d14] via-[#101524] to-[#05060a] p-4 overflow-hidden">
       {/* Glow elements in the background */}
       <div className="absolute right-[-10%] top-[-20%] w-[500px] h-[500px] rounded-full bg-[rgba(201,163,66,0.03)] blur-3xl pointer-events-none" />
       <div className="absolute left-[-10%] bottom-[-20%] w-[500px] h-[500px] rounded-full bg-blue-500/5 blur-3xl pointer-events-none" />
@@ -122,6 +188,7 @@ export default function LoginPage() {
           Secured by Sankara IT Department &copy; {new Date().getFullYear()}
         </p>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
