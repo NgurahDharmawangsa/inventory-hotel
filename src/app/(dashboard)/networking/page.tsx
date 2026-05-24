@@ -10,6 +10,7 @@ import { getRelationsAction } from "@/app/actions/hardware";
 import { NetworkingWithRelations } from "@/repositories/networking.repository";
 import { NetworkingTable } from "@/features/networking/networking-table";
 import { NetworkingForm } from "@/features/networking/networking-form";
+import { NetworkingTableSkeleton } from "@/features/networking/networking-skeleton";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -182,10 +183,7 @@ export default function NetworkingPage() {
 
       {/* Main Table view */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-24 text-center rounded-xl border border-border bg-card">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-          <p className="text-sm font-semibold text-muted-foreground">Loading networking device database...</p>
-        </div>
+        <NetworkingTableSkeleton />
       ) : (
         <NetworkingTable 
           items={items} 

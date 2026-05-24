@@ -10,6 +10,7 @@ import { getRelationsAction } from "@/app/actions/hardware";
 import { HospitalityWithRelations } from "@/repositories/hospitality.repository";
 import { HospitalityTable } from "@/features/hospitality/hospitality-table";
 import { HospitalityForm } from "@/features/hospitality/hospitality-form";
+import { HospitalityTableSkeleton } from "@/features/hospitality/hospitality-skeleton";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -182,10 +183,7 @@ export default function HospitalityPage() {
 
       {/* Main Table view */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-24 text-center rounded-xl border border-border bg-card">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-          <p className="text-sm font-semibold text-muted-foreground">Loading hospitality database...</p>
-        </div>
+        <HospitalityTableSkeleton />
       ) : (
         <HospitalityTable 
           items={items} 

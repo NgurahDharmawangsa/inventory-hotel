@@ -10,6 +10,7 @@ import {
 } from "@/app/actions/maintenance";
 import { MaintenanceTable } from "@/features/maintenance/maintenance-table";
 import { MaintenanceForm } from "@/features/maintenance/maintenance-form";
+import { MaintenanceTableSkeleton } from "@/features/maintenance/maintenance-skeleton";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -232,10 +233,7 @@ export default function MaintenanceContent() { // ← hanya ini yang berubah
 
       {/* Main Table */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-24 text-center rounded-xl border border-border bg-card">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-          <p className="text-sm font-semibold text-muted-foreground">Loading maintenance logs...</p>
-        </div>
+        <MaintenanceTableSkeleton />
       ) : (
         <MaintenanceTable 
           items={filteredItems} 

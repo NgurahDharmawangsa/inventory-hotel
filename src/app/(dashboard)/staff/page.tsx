@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/staff";
 import { StaffTable } from "@/features/staff/staff-table";
 import { StaffForm } from "@/features/staff/staff-form";
+import { StaffTableSkeleton } from "@/features/staff/staff-skeleton";
 import { StaffDetail } from "@/types/database.types";
 import { Button } from "@/components/ui/button";
 import { 
@@ -235,10 +236,7 @@ export default function StaffPage() {
 
       {/* Main Table */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-24 text-center rounded-xl border border-border bg-card">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-          <p className="text-sm font-semibold text-muted-foreground">Loading employee directory...</p>
-        </div>
+        <StaffTableSkeleton />
       ) : (
         <StaffTable 
           items={items} 
