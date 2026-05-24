@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, DM_Mono, Outfit } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -35,7 +36,10 @@ export default function RootLayout({
       lang="id"
       className={`${plusJakartaSans.variable} ${outfit.variable} ${dmMono.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col font-outfit">{children}</body>
+      <body className="min-h-full flex flex-col font-outfit">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
