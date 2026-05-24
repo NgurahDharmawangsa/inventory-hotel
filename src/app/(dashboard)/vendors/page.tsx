@@ -8,6 +8,7 @@ import {
 } from "@/app/actions/vendors";
 import { VendorTable } from "@/features/vendors/vendor-table";
 import { VendorForm } from "@/features/vendors/vendor-form";
+import { VendorTableSkeleton } from "@/features/vendors/vendor-skeleton";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -210,10 +211,7 @@ export default function VendorsPage() {
 
       {/* Main Table */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-24 text-center rounded-xl border border-border bg-card">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-          <p className="text-sm font-semibold text-muted-foreground">Loading vendor directory...</p>
-        </div>
+        <VendorTableSkeleton />
       ) : (
         <VendorTable 
           items={items} 

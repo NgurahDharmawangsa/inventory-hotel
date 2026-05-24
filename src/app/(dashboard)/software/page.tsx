@@ -10,6 +10,7 @@ import { getRelationsAction } from "@/app/actions/hardware";
 import { SoftwareWithRelations } from "@/repositories/software.repository";
 import { SoftwareTable } from "@/features/software/software-table";
 import { SoftwareForm } from "@/features/software/software-form";
+import { SoftwareTableSkeleton } from "@/features/software/software-skeleton";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -184,10 +185,7 @@ export default function SoftwarePage() {
 
       {/* Main Table view */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-24 text-center rounded-xl border border-border bg-card">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-          <p className="text-sm font-semibold text-muted-foreground">Loading software license database...</p>
-        </div>
+        <SoftwareTableSkeleton />
       ) : (
         <SoftwareTable 
           items={items} 

@@ -8,6 +8,7 @@ import {
 } from "@/app/actions/budget";
 import { BudgetTable } from "@/features/budget/budget-table";
 import { BudgetForm } from "@/features/budget/budget-form";
+import { BudgetTableSkeleton } from "@/features/budget/budget-skeleton";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -247,10 +248,7 @@ export default function BudgetPage() {
 
       {/* Main Table View */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-24 text-center rounded-xl border border-border bg-card">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-          <p className="text-sm font-semibold text-muted-foreground">Loading budget records...</p>
-        </div>
+        <BudgetTableSkeleton />
       ) : (
         <BudgetTable 
           items={items} 

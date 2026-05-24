@@ -10,6 +10,7 @@ import { getRelationsAction } from "@/app/actions/hardware";
 import { SecurityWithRelations } from "@/repositories/security.repository";
 import { SecurityTable } from "@/features/security/security-table";
 import { SecurityForm } from "@/features/security/security-form";
+import { SecurityTableSkeleton } from "@/features/security/security-skeleton";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -182,10 +183,7 @@ export default function SecurityPage() {
 
       {/* Main Table view */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-24 text-center rounded-xl border border-border bg-card">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-          <p className="text-sm font-semibold text-muted-foreground">Loading security device database...</p>
-        </div>
+        <SecurityTableSkeleton />
       ) : (
         <SecurityTable 
           items={items} 

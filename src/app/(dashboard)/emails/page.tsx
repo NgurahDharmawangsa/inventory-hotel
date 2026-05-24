@@ -8,6 +8,7 @@ import {
 } from "@/app/actions/emails";
 import { EmailTable } from "@/features/emails/email-table";
 import { EmailForm } from "@/features/emails/email-form";
+import { EmailTableSkeleton } from "@/features/emails/email-skeleton";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -210,10 +211,7 @@ export default function EmailsPage() {
 
       {/* Main Table */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-24 text-center rounded-xl border border-border bg-card">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" />
-          <p className="text-sm font-semibold text-muted-foreground">Loading email accounts...</p>
-        </div>
+        <EmailTableSkeleton />
       ) : (
         <EmailTable 
           items={items} 
