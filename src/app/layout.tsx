@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, DM_Mono, Outfit } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -39,6 +40,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-outfit">
         {children}
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
