@@ -17,7 +17,7 @@ export class HardwareRepository {
   /**
    * Fetch all hardware items with optional filters and staff/vendor relations joined.
    */
-  static async findAll(filters?: { query?: string; status?: string }): Promise<HardwareWithRelations[]> {
+  static async findAll(filters?: { query?: string; status?: string; location?: string }): Promise<HardwareWithRelations[]> {
     let queryBuilder = supabase
       .from("hardware")
       .select(`
@@ -29,6 +29,10 @@ export class HardwareRepository {
 
     if (filters?.status) {
       queryBuilder = queryBuilder.eq("status", filters.status);
+    }
+
+    if (filters?.location) {
+      queryBuilder = queryBuilder.eq("location", filters.location);
     }
 
     if (filters?.query) {
@@ -44,6 +48,53 @@ export class HardwareRepository {
     }
 
     return (data || []) as HardwareWithRelations[];
+  }
+
+  /**
+   * Fetch distinct locations from hardware table.
+   */
+  static async findDistinctLocations(): Promise<string[]> {
+    const { data, error } = await supabase
+      .from("hardware")
+      .select("location")
+      .not("location", "is", null)
+      .order("location", { ascending: true });
+
+    if (error) {
+      console.error("Error in HardwareRepository.findDistinctLocations:", error);
+      throw new Error(`Failed to fetch hardware locations: ${error.message}`);
+    }
+
+    // Deduplicate locations
+    const locations = new Set<string>();
+    (data || []).forEach((item: { location: string | null }) => {
+      if (item.location) locations.add(item.location);
+    });
+
+    return Array.from(locations).sort();
+  }
+
+  /**
+   * Fetch distinct departments from staff table (for location dropdown suggestions).
+   */
+  static async findStaffDepartments(): Promise<string[]> {
+    const { data, error } = await supabase
+      .from("staff")
+      .select("department")
+      .not("department", "is", null)
+      .order("department", { ascending: true });
+
+    if (error) {
+      console.error("Error in HardwareRepository.findStaffDepartments:", error);
+      throw new Error(`Failed to fetch staff departments: ${error.message}`);
+    }
+
+    const departments = new Set<string>();
+    (data || []).forEach((item: { department: string | null }) => {
+      if (item.department) departments.add(item.department);
+    });
+
+    return Array.from(departments).sort();
   }
 
   /**

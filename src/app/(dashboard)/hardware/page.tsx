@@ -3,9 +3,11 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { 
-  getHardwareAction, 
-  getRelationsAction, 
-  deleteHardwareAction 
+   getHardwareAction, 
+   getHardwareLocationsAction, 
+   getHardwareDepartmentOptionsAction, 
+   getRelationsAction, 
+   deleteHardwareAction 
 } from "@/app/actions/hardware";
 import { HardwareWithRelations } from "@/repositories/hardware.repository";
 import { HardwareTable } from "@/features/hardware/hardware-table";
@@ -27,8 +29,18 @@ import {
   Laptop, 
   Loader2, 
   X,
-  AlertTriangle
+  AlertTriangle,
+  Download,
+  FileDown,
+  FileJson
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { exportToCSV, exportToJSON, flattenForExport, generateExportFilename } from "@/lib/export-utils";
 
 export default function HardwarePage() {
   // Data states
@@ -40,6 +52,9 @@ export default function HardwarePage() {
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [locationFilter, setLocationFilter] = useState("ALL");
+  const [locationOptions, setLocationOptions] = useState<string[]>([]);
+  const [departmentOptions, setDepartmentOptions] = useState<string[]>([]);
 
   // Dialog states
   const [formOpen, setFormOpen] = useState(false);
@@ -51,17 +66,33 @@ export default function HardwarePage() {
   // Notifications
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // Fetch relations once on mount
+  // Fetch relations, departments, and locations once on mount
   useEffect(() => {
-    async function loadRelations() {
-      const res = await getRelationsAction();
-      if (res.success) {
-        setStaff(res.data.staff);
-        setVendors(res.data.vendors);
+    async function loadInitialData() {
+      const [relationsRes, deptRes] = await Promise.all([
+        getRelationsAction(),
+        getHardwareDepartmentOptionsAction(),
+      ]);
+      if (relationsRes.success) {
+        setStaff(relationsRes.data.staff);
+        setVendors(relationsRes.data.vendors);
+      }
+      if (deptRes.success) {
+        setDepartmentOptions(deptRes.data);
       }
     }
-    loadRelations();
+    loadInitialData();
+    // Also fetch initial locations
+    refreshLocationOptions();
   }, []);
+
+  // Refresh location dropdown options from database
+  const refreshLocationOptions = async () => {
+    const res = await getHardwareLocationsAction();
+    if (res.success) {
+      setLocationOptions(res.data);
+    }
+  };
 
   // Fetch hardware list based on filters
   const loadHardware = async () => {
@@ -69,7 +100,8 @@ export default function HardwarePage() {
     try {
       const res = await getHardwareAction({
         query: searchQuery || undefined,
-        status: statusFilter !== "ALL" ? statusFilter : undefined
+        status: statusFilter !== "ALL" ? statusFilter : undefined,
+        location: locationFilter !== "ALL" ? locationFilter : undefined,
       });
       if (res.success) {
         setItems(res.data);
@@ -90,7 +122,7 @@ export default function HardwarePage() {
     }, 300); // 300ms debounce for search input
 
     return () => clearTimeout(delayDebounce);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, locationFilter]);
 
   const showNotification = (type: "success" | "error", message: string) => {
     setNotification({ type, message });
@@ -117,6 +149,7 @@ export default function HardwarePage() {
     setSelectedItem(null);
     showNotification("success", `Hardware asset successfully ${selectedItem ? "updated" : "registered"}.`);
     loadHardware();
+    refreshLocationOptions();
   };
 
   const handleDeleteConfirm = async () => {
@@ -129,6 +162,7 @@ export default function HardwarePage() {
         setDeleteId(null);
         showNotification("success", "Hardware asset successfully deleted.");
         loadHardware();
+        refreshLocationOptions();
       } else {
         showNotification("error", res.error || "Failed to delete hardware asset.");
       }
@@ -163,13 +197,54 @@ export default function HardwarePage() {
             Monitor, register, and assign hotel physical IT infrastructure and guest devices.
           </p>
         </div>
-        <Button 
-          onClick={handleCreateOpen}
-          className="h-10 px-4 rounded-lg bg-primary text-primary-foreground font-semibold flex items-center gap-2 shadow-sm hover:bg-primary/90 shrink-0 w-fit"
-        >
-          <Plus className="h-4 w-4" />
-          Register New Asset
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Export Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline"
+                className="h-10 px-4 rounded-lg font-semibold flex items-center gap-2 shadow-sm shrink-0"
+              >
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem 
+                onClick={() => {
+                  const filename = generateExportFilename("hardware-assets");
+                  const flattenedData = flattenForExport(items);
+                  exportToCSV(flattenedData, filename);
+                  showNotification("success", "Hardware data exported to CSV successfully!");
+                }}
+                className="cursor-pointer"
+              >
+                <FileDown className="h-4 w-4 mr-2" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => {
+                  const filename = generateExportFilename("hardware-assets");
+                  exportToJSON(items, filename);
+                  showNotification("success", "Hardware data exported to JSON successfully!");
+                }}
+                className="cursor-pointer"
+              >
+                <FileJson className="h-4 w-4 mr-2" />
+                Export as JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Register Button */}
+          <Button 
+            onClick={handleCreateOpen}
+            className="h-10 px-4 rounded-lg bg-primary text-primary-foreground font-semibold flex items-center gap-2 shadow-sm hover:bg-primary/90 shrink-0 w-fit"
+          >
+            <Plus className="h-4 w-4" />
+            Register New Asset
+          </Button>
+        </div>
       </div>
 
       {/* Filters Bar */}
@@ -201,6 +276,20 @@ export default function HardwarePage() {
             <option value="DISPOSED">Disposed</option>
           </select>
         </div>
+
+        {/* Location Dropdown */}
+        <div className="flex items-center gap-2 shrink-0">
+          <select
+            value={locationFilter}
+            onChange={(e) => setLocationFilter(e.target.value)}
+            className="flex h-10 w-48 rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="ALL">All Locations</option>
+            {locationOptions.map((loc) => (
+              <option key={loc} value={loc}>{loc}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Main Table view */}
@@ -230,6 +319,7 @@ export default function HardwarePage() {
               initialData={selectedItem}
               staffList={staff}
               vendorList={vendors}
+              departmentOptions={departmentOptions}
               onSuccess={handleFormSuccess}
               onCancel={() => setFormOpen(false)}
             />

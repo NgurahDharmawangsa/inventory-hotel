@@ -40,3 +40,30 @@ This document outlines the step-by-step roadmap to build the modern IT Inventory
 > [!NOTE]
 > 1. Apakah Anda sudah memiliki akun dan proyek Supabase yang siap digunakan, atau Anda akan membuatnya nanti saat kita masuk ke Phase 3?
 > 2. Apakah tahapan di atas sudah sesuai dengan ekspektasi Anda? Jika ya, beri tahu saya kapan Anda siap untuk memulai eksekusi **Phase 1**.
+
+Ya, saya ingat betul. Itu adalah daftar **20 fitur** yang saya rekomendasikan untuk melengkapi sistem inventory hotel, dibagi dalam 3 fase prioritas:
+
+**Phase 1 — Must Have:**
+1. Manajemen Transaksi/Penggunaan Barang
+2. Sistem Notifikasi Stok Rendah
+3. User Management dengan RBAC
+4. Search dan Filter Advanced
+5. Error Handling yang Lebih Baik
+
+**Phase 2 — Should Have:**
+6. Laporan dan Analytics
+7. Audit Trail
+8. Bulk Operations
+9. Dashboard Improvements
+10. Image Upload
+
+**Phase 3 — Nice to Have:**
+11. Barcode Integration
+12. Supplier Management
+13. Location Management
+14. Mobile Optimization
+15. Maintenance Schedule
+
+Apakah Anda ingin mulai mengerjakan salah satu fitur dari daftar ini sekarang? Jika iya, saya akan switch ke ACT MODE dan mulai implementasi. Atau mungkin Anda ingin mengubah urutan prioritasnya terlebih dahulu?
+
+Silakan toggle ke **Act Mode** jika Anda sudah siap untuk mulai mengeksekusi.

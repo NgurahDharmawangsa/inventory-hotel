@@ -9,9 +9,9 @@ export type ActionResponse<T> =
   | { success: false; error: string };
 
 /**
- * Action to fetch all hardware assets based on query and status.
+ * Action to fetch all hardware assets based on query, status, and location.
  */
-export async function getHardwareAction(filters?: { query?: string; status?: string }): Promise<ActionResponse<any>> {
+export async function getHardwareAction(filters?: { query?: string; status?: string; location?: string }): Promise<ActionResponse<any>> {
   try {
     const data = await HardwareService.getAllHardware(filters);
     return { success: true, data };
@@ -56,6 +56,30 @@ export async function deleteHardwareAction(id: string): Promise<ActionResponse<v
     return { success: true, data: undefined };
   } catch (error: any) {
     return { success: false, error: error.message || "An unexpected error occurred." };
+  }
+}
+
+/**
+ * Action to fetch distinct hardware locations.
+ */
+export async function getHardwareLocationsAction(): Promise<ActionResponse<string[]>> {
+  try {
+    const locations = await HardwareService.getDistinctLocations();
+    return { success: true, data: locations };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to fetch hardware locations." };
+  }
+}
+
+/**
+ * Action to fetch distinct staff departments (for location dropdown suggestions).
+ */
+export async function getHardwareDepartmentOptionsAction(): Promise<ActionResponse<string[]>> {
+  try {
+    const departments = await HardwareService.getStaffDepartments();
+    return { success: true, data: departments };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to fetch department options." };
   }
 }
 
