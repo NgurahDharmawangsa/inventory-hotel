@@ -11,6 +11,7 @@ interface HardwareFormProps {
   initialData?: HardwareWithRelations | null;
   staffList: Array<{ id: string; full_name: string; department: string }>;
   vendorList: Array<{ id: string; name: string }>;
+  departmentOptions: string[];
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -19,6 +20,7 @@ export function HardwareForm({
   initialData,
   staffList,
   vendorList,
+  departmentOptions,
   onSuccess,
   onCancel
 }: HardwareFormProps) {
@@ -167,15 +169,22 @@ export function HardwareForm({
           <label htmlFor="location" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
             Location
           </label>
-          <input
+          <select
             id="location"
-            type="text"
-            placeholder="e.g. Front Office, IT Room"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             disabled={loading}
-            className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
-          />
+            className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+          >
+            <option value="">Select location...</option>
+            {departmentOptions.map((dept) => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
+            {/* Allow custom entry */}
+            {location && !departmentOptions.includes(location) && (
+              <option value={location}>{location}</option>
+            )}
+          </select>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

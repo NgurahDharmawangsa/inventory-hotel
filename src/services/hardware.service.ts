@@ -6,10 +6,11 @@ export class HardwareService {
   /**
    * Fetch all hardware assets, passing optional filters.
    */
-  static async getAllHardware(filters?: { query?: string; status?: string }): Promise<HardwareWithRelations[]> {
+  static async getAllHardware(filters?: { query?: string; status?: string; location?: string }): Promise<HardwareWithRelations[]> {
     return HardwareRepository.findAll({
       query: filters?.query?.trim(),
-      status: filters?.status ? filters.status.toUpperCase() : undefined
+      status: filters?.status ? filters.status.toUpperCase() : undefined,
+      location: filters?.location || undefined,
     });
   }
 
@@ -36,6 +37,20 @@ export class HardwareService {
     if (!id) throw new Error("Hardware Asset ID is required for update.");
     const validatedPayload = HardwareValidator.validateUpdate(data);
     return HardwareRepository.update(id, validatedPayload);
+  }
+
+  /**
+   * Fetch distinct hardware locations.
+   */
+  static async getDistinctLocations(): Promise<string[]> {
+    return HardwareRepository.findDistinctLocations();
+  }
+
+  /**
+   * Fetch distinct staff departments (for location dropdown suggestions).
+   */
+  static async getStaffDepartments(): Promise<string[]> {
+    return HardwareRepository.findStaffDepartments();
   }
 
   /**
