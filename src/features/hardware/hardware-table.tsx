@@ -49,8 +49,9 @@ export function HardwareTable({ items, onEdit, onDelete }: HardwareTableProps) {
           bVal = b.category || "";
           break;
         case "location":
-          aVal = a.location || "";
-          bVal = b.location || "";
+          // Sort by department, location, or room
+          aVal = a.department?.name || a.location?.name || a.room?.room_number || "";
+          bVal = b.department?.name || b.location?.name || b.room?.room_number || "";
           break;
         case "status":
           aVal = a.status || "";
@@ -180,14 +181,30 @@ export function HardwareTable({ items, onEdit, onDelete }: HardwareTableProps) {
               </TableCell>
               <TableCell className="text-muted-foreground font-medium">{item.category}</TableCell>
               <TableCell className="text-muted-foreground font-medium">
-                {item.location || <span className="text-muted-foreground/30">—</span>}
+                {item.department ? (
+                  <div className="flex flex-col leading-none">
+                    <span className="text-xs font-semibold text-foreground/70">Dept: {item.department.name}</span>
+                  </div>
+                ) : item.location ? (
+                  <div className="flex flex-col leading-none">
+                    <span className="text-xs font-semibold text-foreground/70">{item.location.name}</span>
+                    <span className="text-[10px] text-muted-foreground">({item.location.type})</span>
+                  </div>
+                ) : item.room ? (
+                  <div className="flex flex-col leading-none">
+                    <span className="text-xs font-semibold text-foreground/70">Room {item.room.room_number}</span>
+                    {item.room.floor && <span className="text-[10px] text-muted-foreground">{item.room.floor}</span>}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground/30">—</span>
+                )}
               </TableCell>
               <TableCell>{getStatusBadge(item.status)}</TableCell>
               <TableCell className="font-medium text-foreground/80">
                 {item.staff ? (
                   <div className="flex flex-col leading-none">
                     <span className="text-sm font-semibold">{item.staff.full_name}</span>
-                    <span className="text-[10px] text-muted-foreground">{item.staff.department}</span>
+                    <span className="text-[10px] text-muted-foreground">{item.staff.department?.name}</span>
                   </div>
                 ) : (
                   <span className="text-muted-foreground/30 font-semibold">Unassigned</span>

@@ -29,12 +29,19 @@ export class HardwareValidator {
       throw new Error(`Invalid status. Allowed: ${VALID_STATUSES.join(", ")}`);
     }
 
-    // 4. Sanitize and return full object
+    // 4. Validate location/room exclusivity
+    if (data.location_id && data.room_id) {
+      throw new Error("Cannot assign both location and room. Please select only one.");
+    }
+
+    // 5. Sanitize and return full object
     return {
       item_code: data.item_code?.trim() || null,
       name,
       category: category as ValidCategory,
-      location: data.location?.trim() || null,
+      department_id: data.department_id && data.department_id !== "" ? data.department_id : null,
+      location_id: data.location_id && data.location_id !== "" ? data.location_id : null,
+      room_id: data.room_id && data.room_id !== "" ? data.room_id : null,
       status: status as ValidStatus,
       staff_id: data.staff_id && data.staff_id !== "" ? data.staff_id : null,
       vendor_id: data.vendor_id && data.vendor_id !== "" ? data.vendor_id : null
@@ -73,15 +80,28 @@ export class HardwareValidator {
       sanitizedData.status = status as ValidStatus;
     }
 
-    // 4. Location & Item Code
+    // 4. Validate location/room exclusivity
+    if (data.location_id && data.room_id) {
+      throw new Error("Cannot assign both location and room. Please select only one.");
+    }
+
+    // 5. Item Code
     if (data.item_code !== undefined) {
       sanitizedData.item_code = data.item_code?.trim() || null;
     }
-    if (data.location !== undefined) {
-      sanitizedData.location = data.location?.trim() || null;
+
+    // 6. Department, Location, Room
+    if (data.department_id !== undefined) {
+      sanitizedData.department_id = data.department_id && data.department_id !== "" ? data.department_id : null;
+    }
+    if (data.location_id !== undefined) {
+      sanitizedData.location_id = data.location_id && data.location_id !== "" ? data.location_id : null;
+    }
+    if (data.room_id !== undefined) {
+      sanitizedData.room_id = data.room_id && data.room_id !== "" ? data.room_id : null;
     }
 
-    // 5. Staff & Vendor associations
+    // 7. Staff & Vendor associations
     if (data.staff_id !== undefined) {
       sanitizedData.staff_id = data.staff_id && data.staff_id !== "" ? data.staff_id : null;
     }

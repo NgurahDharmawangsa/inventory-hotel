@@ -7,6 +7,9 @@ import {
   deleteNetworkingAction 
 } from "@/app/actions/networking";
 import { getRelationsAction } from "@/app/actions/hardware";
+import { getDepartmentsAction } from "@/app/actions/departments";
+import { getLocationsAction } from "@/app/actions/locations";
+import { getRoomsAction } from "@/app/actions/rooms";
 import { NetworkingWithRelations } from "@/repositories/networking.repository";
 import { NetworkingTable } from "@/features/networking/networking-table";
 import { NetworkingForm } from "@/features/networking/networking-form";
@@ -32,6 +35,9 @@ export default function NetworkingPage() {
   // Data states
   const [items, setItems] = useState<NetworkingWithRelations[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [locations, setLocations] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filter states
@@ -47,15 +53,29 @@ export default function NetworkingPage() {
   // Notifications
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // Fetch relations once on mount
+  // Fetch relations and master data once on mount
   useEffect(() => {
-    async function loadRelations() {
-      const res = await getRelationsAction();
-      if (res.success) {
-        setVendors(res.data.vendors);
+    async function loadInitialData() {
+      const [relationsRes, departmentsRes, locationsRes, roomsRes] = await Promise.all([
+        getRelationsAction(),
+        getDepartmentsAction(),
+        getLocationsAction(),
+        getRoomsAction(),
+      ]);
+      if (relationsRes.success) {
+        setVendors(relationsRes.data.vendors);
+      }
+      if (departmentsRes.success) {
+        setDepartments(departmentsRes.data);
+      }
+      if (locationsRes.success) {
+        setLocations(locationsRes.data);
+      }
+      if (roomsRes.success) {
+        setRooms(roomsRes.data);
       }
     }
-    loadRelations();
+    loadInitialData();
   }, []);
 
   // Fetch networking list based on filters
@@ -207,6 +227,9 @@ export default function NetworkingPage() {
             <NetworkingForm
               initialData={selectedItem}
               vendorList={vendors}
+              departments={departments}
+              locations={locations}
+              rooms={rooms}
               onSuccess={handleFormSuccess}
               onCancel={() => setFormOpen(false)}
             />

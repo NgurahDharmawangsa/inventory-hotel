@@ -9,9 +9,12 @@ import { Loader2 } from "lucide-react";
 
 interface HardwareFormProps {
   initialData?: HardwareWithRelations | null;
-  staffList: Array<{ id: string; full_name: string; department: string }>;
+  staffList: Array<{ id: string; full_name: string; department_id?: string; department?: { id: string; name: string } }>;
   vendorList: Array<{ id: string; name: string }>;
   departmentOptions: string[];
+  departments: Array<{ id: string; name: string }>;
+  locations: Array<{ id: string; name: string; type: string }>;
+  rooms: Array<{ id: string; room_number: string; floor?: string; room_type?: string }>;
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -21,6 +24,9 @@ export function HardwareForm({
   staffList,
   vendorList,
   departmentOptions,
+  departments,
+  locations,
+  rooms,
   onSuccess,
   onCancel
 }: HardwareFormProps) {
@@ -32,7 +38,9 @@ export function HardwareForm({
   const [itemCode, setItemCode] = useState(initialData?.item_code || "");
   const [name, setName] = useState(initialData?.name || "");
   const [category, setCategory] = useState(initialData?.category || "Laptop");
-  const [location, setLocation] = useState(initialData?.location || "");
+  const [departmentId, setDepartmentId] = useState(initialData?.department_id || "");
+  const [locationId, setLocationId] = useState(initialData?.location_id || "");
+  const [roomId, setRoomId] = useState(initialData?.room_id || "");
   const [status, setStatus] = useState(initialData?.status || "ACTIVE");
   const [staffId, setStaffId] = useState(initialData?.staff_id || "");
   const [vendorId, setVendorId] = useState(initialData?.vendor_id || "");
@@ -48,11 +56,20 @@ export function HardwareForm({
       return;
     }
 
+    // Validate: cannot have both location_id and room_id
+    if (locationId && roomId) {
+      setError("Please select either Location OR Room, not both.");
+      setLoading(false);
+      return;
+    }
+
     const payload = {
       item_code: itemCode.trim() || undefined,
       name: name.trim(),
       category,
-      location: location.trim() || undefined,
+      department_id: departmentId === "" ? null : departmentId,
+      location_id: locationId === "" ? null : locationId,
+      room_id: roomId === "" ? null : roomId,
       status,
       staff_id: staffId === "" ? null : staffId,
       vendor_id: vendorId === "" ? null : vendorId
@@ -164,27 +181,73 @@ export function HardwareForm({
           </div>
         </div>
 
-        {/* Location */}
+        {/* Department */}
         <div className="space-y-1">
-          <label htmlFor="location" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-            Location
+          <label htmlFor="department" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+            Department
           </label>
           <select
-            id="location"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            id="department"
+            value={departmentId}
+            onChange={(e) => setDepartmentId(e.target.value)}
             disabled={loading}
             className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
           >
-            <option value="">Select location...</option>
-            {departmentOptions.map((dept) => (
-              <option key={dept} value={dept}>{dept}</option>
+            <option value="">Select department...</option>
+            {departments.map((dept) => (
+              <option key={dept.id} value={dept.id}>{dept.name}</option>
             ))}
-            {/* Allow custom entry */}
-            {location && !departmentOptions.includes(location) && (
-              <option value={location}>{location}</option>
-            )}
           </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          {/* Location */}
+          <div className="space-y-1">
+            <label htmlFor="location" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+              Location
+            </label>
+            <select
+              id="location"
+              value={locationId}
+              onChange={(e) => {
+                setLocationId(e.target.value);
+                if (e.target.value) setRoomId(""); // Clear room if location selected
+              }}
+              disabled={loading || !!roomId}
+              className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+            >
+              <option value="">Select location...</option>
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id}>{loc.name} ({loc.type})</option>
+              ))}
+            </select>
+            {roomId && <p className="text-xs text-muted-foreground">Disabled (Room selected)</p>}
+          </div>
+
+          {/* Room */}
+          <div className="space-y-1">
+            <label htmlFor="room" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+              Room
+            </label>
+            <select
+              id="room"
+              value={roomId}
+              onChange={(e) => {
+                setRoomId(e.target.value);
+                if (e.target.value) setLocationId(""); // Clear location if room selected
+              }}
+              disabled={loading || !!locationId}
+              className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+            >
+              <option value="">Select room...</option>
+              {rooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {room.room_number}{room.floor ? ` (${room.floor})` : ''}
+                </option>
+              ))}
+            </select>
+            {locationId && <p className="text-xs text-muted-foreground">Disabled (Location selected)</p>}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -203,7 +266,7 @@ export function HardwareForm({
               <option value="">Unassigned</option>
               {staffList.map((staff) => (
                 <option key={staff.id} value={staff.id}>
-                  {staff.full_name} ({staff.department})
+                  {staff.full_name}{staff.department ? ` (${staff.department.name})` : ''}
                 </option>
               ))}
             </select>

@@ -10,6 +10,9 @@ import { Loader2 } from "lucide-react";
 interface SecurityFormProps {
   initialData?: SecurityWithRelations | null;
   vendorList: Array<{ id: string; name: string }>;
+  departments: Array<{ id: string; name: string }>;
+  locations: Array<{ id: string; name: string; type: string }>;
+  rooms: Array<{ id: string; room_number: string; floor?: string; room_type?: string }>;
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -17,6 +20,9 @@ interface SecurityFormProps {
 export function SecurityForm({
   initialData,
   vendorList,
+  departments,
+  locations,
+  rooms,
   onSuccess,
   onCancel
 }: SecurityFormProps) {
@@ -24,10 +30,11 @@ export function SecurityForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form states
   const [itemCode, setItemCode] = useState(initialData?.item_code || "");
-  const [deviceType, setDeviceType] = useState(initialData?.device_type || "");
-  const [location, setLocation] = useState(initialData?.location || "");
+  const [deviceType, setDeviceType] = useState(initialData?.device_type || "CCTV");
+  const [departmentId, setDepartmentId] = useState(initialData?.department_id || "");
+  const [locationId, setLocationId] = useState(initialData?.location_id || "");
+  const [roomId, setRoomId] = useState(initialData?.room_id || "");
   const [status, setStatus] = useState(initialData?.status || "ONLINE");
   const [vendorId, setVendorId] = useState(initialData?.vendor_id || "");
 
@@ -36,8 +43,14 @@ export function SecurityForm({
     setLoading(true);
     setError(null);
 
-    if (deviceType.trim().length < 3) {
-      setError("Device Type must be at least 3 characters long.");
+    if (deviceType.trim().length < 2) {
+      setError("Device Type must be at least 2 characters long.");
+      setLoading(false);
+      return;
+    }
+
+    if (locationId && roomId) {
+      setError("Please select either Location OR Room, not both.");
       setLoading(false);
       return;
     }
@@ -45,9 +58,11 @@ export function SecurityForm({
     const payload = {
       item_code: itemCode.trim() || undefined,
       device_type: deviceType.trim(),
-      location: location.trim() || undefined,
+      department_id: departmentId === "" ? null : departmentId,
+      location_id: locationId === "" ? null : locationId,
+      room_id: roomId === "" ? null : roomId,
       status,
-      vendor_id: vendorId || undefined
+      vendor_id: vendorId === "" ? null : vendorId
     };
 
     try {
@@ -79,16 +94,15 @@ export function SecurityForm({
       )}
 
       <div className="space-y-3">
-        <div className="grid grid-cols-3 gap-4">
-          {/* Item Code */}
-          <div className="space-y-1 col-span-1">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
             <label htmlFor="itemCode" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
               Item Code
             </label>
             <input
               id="itemCode"
               type="text"
-              placeholder="e.g. SEC-CTV-001"
+              placeholder="e.g. SEC-CC-001"
               value={itemCode}
               onChange={(e) => setItemCode(e.target.value)}
               disabled={loading}
@@ -96,61 +110,109 @@ export function SecurityForm({
             />
           </div>
 
-          {/* Device Type */}
-          <div className="space-y-1 col-span-2">
+          <div className="space-y-1">
             <label htmlFor="deviceType" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
               Device Type *
             </label>
-            <input
+            <select
               id="deviceType"
-              type="text"
-              required
-              placeholder="e.g. Hikvision Dome Camera"
               value={deviceType}
               onChange={(e) => setDeviceType(e.target.value)}
               disabled={loading}
-              className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          {/* Location */}
-          <div className="space-y-1">
-            <label htmlFor="location" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-              Location
-            </label>
-            <input
-              id="location"
-              type="text"
-              placeholder="e.g. Lobby, Server Room"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              disabled={loading}
-              className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
-            />
-          </div>
-
-          {/* Status */}
-          <div className="space-y-1">
-            <label htmlFor="status" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-              Status *
-            </label>
-            <select
-              id="status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as "ONLINE" | "OFFLINE" | "MAINTENANCE")}
-              disabled={loading}
               className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
             >
-              <option value="ONLINE">Online</option>
-              <option value="OFFLINE">Offline</option>
-              <option value="MAINTENANCE">Maintenance</option>
+              <option value="CCTV">CCTV</option>
+              <option value="Access Control">Access Control</option>
+              <option value="Fire Alarm">Fire Alarm</option>
+              <option value="Intrusion">Intrusion Detection</option>
+              <option value="Other">Other</option>
             </select>
           </div>
         </div>
 
-        {/* Vendor */}
+        <div className="space-y-1">
+          <label htmlFor="status" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+            Status *
+          </label>
+          <select
+            id="status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as 'ONLINE' | 'OFFLINE' | 'MAINTENANCE')}
+            disabled={loading}
+            className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+          >
+            <option value="ONLINE">Online</option>
+            <option value="OFFLINE">Offline</option>
+            <option value="MAINTENANCE">Maintenance</option>
+          </select>
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="department" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+            Department
+          </label>
+          <select
+            id="department"
+            value={departmentId}
+            onChange={(e) => setDepartmentId(e.target.value)}
+            disabled={loading}
+            className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+          >
+            <option value="">Select department...</option>
+            {departments.map((dept) => (
+              <option key={dept.id} value={dept.id}>{dept.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label htmlFor="location" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+              Location
+            </label>
+            <select
+              id="location"
+              value={locationId}
+              onChange={(e) => {
+                setLocationId(e.target.value);
+                if (e.target.value) setRoomId("");
+              }}
+              disabled={loading || !!roomId}
+              className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+            >
+              <option value="">Select location...</option>
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id}>{loc.name} ({loc.type})</option>
+              ))}
+            </select>
+            {roomId && <p className="text-xs text-muted-foreground">Disabled (Room selected)</p>}
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="room" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+              Room
+            </label>
+            <select
+              id="room"
+              value={roomId}
+              onChange={(e) => {
+                setRoomId(e.target.value);
+                if (e.target.value) setLocationId("");
+              }}
+              disabled={loading || !!locationId}
+              className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+            >
+              <option value="">Select room...</option>
+              {rooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {room.room_number}{room.floor ? ` (${room.floor})` : ''}
+                </option>
+              ))}
+            </select>
+            {locationId && <p className="text-xs text-muted-foreground">Disabled (Location selected)</p>}
+          </div>
+        </div>
+
         <div className="space-y-1">
           <label htmlFor="vendor" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
             Vendor Partner
@@ -172,7 +234,6 @@ export function SecurityForm({
         </div>
       </div>
 
-      {/* Buttons */}
       <div className="flex items-center justify-end gap-2 pt-4 border-t border-border mt-6">
         <Button
           type="button"

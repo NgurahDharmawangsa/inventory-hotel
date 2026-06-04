@@ -14,7 +14,10 @@ export class EmailRepository {
           id,
           employee_id,
           full_name,
-          department
+          department_id (
+            id,
+            name
+          )
         )
       `)
       .order("email_address");
@@ -48,7 +51,18 @@ export class EmailRepository {
   static async findById(id: string): Promise<EmailAccount | null> {
     const { data, error } = await supabase
       .from("emails")
-      .select("*")
+      .select(`
+          *,
+            staff:staff_id (
+              id,
+              full_name,
+              employee_id,
+              department_id (
+                id,
+                name
+              )
+            )
+        `)
       .eq("id", id)
       .single();
 

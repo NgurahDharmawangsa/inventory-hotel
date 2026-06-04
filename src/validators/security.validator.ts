@@ -20,10 +20,16 @@ export class SecurityValidator {
       throw new Error(`Invalid status: ${data.status}. Must be one of: ${validStatuses.join(", ")}`);
     }
 
+    if (data.location_id && data.room_id) {
+      throw new Error("Cannot assign both location and room. Please select only one.");
+    }
+
     return {
       device_type: trimmedDeviceType,
       item_code: data.item_code?.trim() || null,
-      location: data.location?.trim() || null,
+      department_id: data.department_id && data.department_id !== "" ? data.department_id : null,
+      location_id: data.location_id && data.location_id !== "" ? data.location_id : null,
+      room_id: data.room_id && data.room_id !== "" ? data.room_id : null,
       status: status as "ONLINE" | "OFFLINE" | "MAINTENANCE",
       vendor_id: data.vendor_id || null,
     };
@@ -50,8 +56,20 @@ export class SecurityValidator {
       sanitizedData.item_code = data.item_code?.trim() || null;
     }
 
-    if (data.location !== undefined) {
-      sanitizedData.location = data.location?.trim() || null;
+    if (data.location_id && data.room_id) {
+      throw new Error("Cannot assign both location and room. Please select only one.");
+    }
+
+    if (data.department_id !== undefined) {
+      sanitizedData.department_id = data.department_id && data.department_id !== "" ? data.department_id : null;
+    }
+
+    if (data.location_id !== undefined) {
+      sanitizedData.location_id = data.location_id && data.location_id !== "" ? data.location_id : null;
+    }
+
+    if (data.room_id !== undefined) {
+      sanitizedData.room_id = data.room_id && data.room_id !== "" ? data.room_id : null;
     }
 
     if (data.status !== undefined) {

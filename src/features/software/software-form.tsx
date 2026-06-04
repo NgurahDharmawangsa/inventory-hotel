@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react";
 
 interface SoftwareFormProps {
   initialData?: SoftwareWithRelations | null;
-  staffList: Array<{ id: string; full_name: string; department: string }>;
+  staffList: Array<{ id: string; full_name: string; department: { id: string; name: string } | null }>;
   vendorList: Array<{ id: string; name: string }>;
   onSuccess: () => void;
   onCancel: () => void;
@@ -166,7 +166,7 @@ export function SoftwareForm({
               <option value="">Unassigned</option>
               {staffList.map((staff) => (
                 <option key={staff.id} value={staff.id}>
-                  {staff.full_name} ({staff.department})
+                  {staff.full_name} ({staff.department?.name || "No Dept"})
                 </option>
               ))}
             </select>

@@ -3,14 +3,12 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { 
-  getHospitalityAction, 
-  deleteHospitalityAction 
-} from "@/app/actions/hospitality";
-import { getRelationsAction } from "@/app/actions/hardware";
-import { HospitalityWithRelations } from "@/repositories/hospitality.repository";
-import { HospitalityTable } from "@/features/hospitality/hospitality-table";
-import { HospitalityForm } from "@/features/hospitality/hospitality-form";
-import { HospitalityTableSkeleton } from "@/features/hospitality/hospitality-skeleton";
+  getDepartmentsAction,
+  deleteDepartmentAction 
+} from "@/app/actions/departments";
+import { DepartmentsTable } from "./departments-table";
+import { DepartmentsForm } from "./departments-form";
+import { MasterDataSkeleton } from "../shared/master-data-skeleton";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -28,60 +26,43 @@ import {
   AlertTriangle
 } from "lucide-react";
 
-export default function HospitalityPage() {
-  // Data states
-  const [items, setItems] = useState<HospitalityWithRelations[]>([]);
-  const [vendors, setVendors] = useState<any[]>([]);
+export function DepartmentsTab() {
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Filter states
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Dialog states
+  // Modals
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<HospitalityWithRelations | null>(null);
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Notifications
+  // Notification
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // Fetch relations once on mount
-  useEffect(() => {
-    async function loadRelations() {
-      const res = await getRelationsAction();
-      if (res.success) {
-        setVendors(res.data.vendors);
-      }
-    }
-    loadRelations();
-  }, []);
-
-  // Fetch hospitality list based on filters
-  const loadHospitality = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const res = await getHospitalityAction({
+      const res = await getDepartmentsAction({
         query: searchQuery || undefined
       });
       if (res.success) {
         setItems(res.data || []);
       } else {
-        showNotification("error", res.error || "Failed to load hospitality devices.");
+        showNotification("error", res.error || "Failed to load departments.");
       }
     } catch (err: any) {
-      showNotification("error", err.message || "Failed to load hospitality devices.");
+      showNotification("error", err.message || "Failed to load departments.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Re-fetch on filter changes
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
-      loadHospitality();
-    }, 300); // 300ms debounce for search input
+      loadData();
+    }, 300);
 
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
@@ -96,7 +77,7 @@ export default function HospitalityPage() {
     setFormOpen(true);
   };
 
-  const handleEditOpen = (item: HospitalityWithRelations) => {
+  const handleEditOpen = (item: any) => {
     setSelectedItem(item);
     setFormOpen(true);
   };
@@ -109,33 +90,32 @@ export default function HospitalityPage() {
   const handleFormSuccess = () => {
     setFormOpen(false);
     setSelectedItem(null);
-    showNotification("success", `Hospitality device successfully ${selectedItem ? "updated" : "registered"}.`);
-    loadHospitality();
+    showNotification("success", `Department successfully ${selectedItem ? "updated" : "created"}.`);
+    loadData();
   };
 
   const handleDeleteConfirm = async () => {
     if (!deleteId) return;
     setDeleteLoading(true);
     try {
-      const res = await deleteHospitalityAction(deleteId);
+      const res = await deleteDepartmentAction(deleteId);
       if (res.success) {
         setDeleteOpen(false);
         setDeleteId(null);
-        showNotification("success", "Hospitality device successfully deleted.");
-        loadHospitality();
+        showNotification("success", "Department deleted successfully.");
+        loadData();
       } else {
-        showNotification("error", res.error || "Failed to delete hospitality device.");
+        showNotification("error", res.error || "Failed to delete department.");
       }
     } catch (err: any) {
-      showNotification("error", err.message || "Failed to delete hospitality device.");
+      showNotification("error", err.message || "Failed to delete department.");
     } finally {
       setDeleteLoading(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Notification Banner */}
+    <div className="space-y-4">
       {notification && (
         <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 rounded-xl border p-4 shadow-lg animate-in fade-in-0 slide-in-from-top-5 max-w-md ${
           notification.type === "success" 
@@ -149,64 +129,52 @@ export default function HospitalityPage() {
         </div>
       )}
 
-      {/* Page Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Hospitality Systems</h1>
-          <p className="text-sm font-medium text-muted-foreground">
-            Monitor and manage in-room hotel technology assets, including Smart TVs, IP Phones, PABX systems, and room keycard encoders.
-          </p>
-        </div>
-        <Button 
-          onClick={handleCreateOpen}
-          className="h-10 px-4 rounded-lg bg-primary text-primary-foreground font-semibold flex items-center gap-2 shadow-sm hover:bg-primary/90 shrink-0 w-fit"
-        >
-          <Plus className="h-4 w-4" />
-          Register New Device
-        </Button>
-      </div>
-
-      {/* Filters Bar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        {/* Search */}
-        <div className="relative flex-1">
+      {/* Actions Bar */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search by device type, item code, or room number..."
+            placeholder="Search departments by name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex h-10 w-full rounded-lg border border-input bg-card pl-10 pr-4 text-sm shadow-xs transition-colors placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </div>
+        <Button 
+          onClick={handleCreateOpen}
+          className="h-10 px-4 rounded-lg bg-primary text-primary-foreground font-semibold flex items-center gap-2 shadow-sm hover:bg-primary/90 shrink-0"
+        >
+          <Plus className="h-4 w-4" />
+          Add Department
+        </Button>
       </div>
 
-      {/* Main Table view */}
+      {/* Table */}
       {loading ? (
-        <HospitalityTableSkeleton />
+        <MasterDataSkeleton columns={3} />
       ) : (
-        <HospitalityTable 
+        <DepartmentsTable 
           items={items} 
           onEdit={handleEditOpen} 
-          onDelete={handleDeleteOpen} 
+          onDelete={handleDeleteOpen}
         />
       )}
 
-      {/* Form Dialog Modal (Create/Edit) */}
+      {/* Form Modal */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-foreground">
-              {selectedItem ? "Edit Hospitality Device" : "Register New Device"}
+              {selectedItem ? "Edit Department" : "Create New Department"}
             </DialogTitle>
             <DialogDescription className="text-sm font-medium text-muted-foreground">
-              Fill in the parameters below to update or register the hospitality asset.
+              {selectedItem ? "Update department information." : "Add a new department to the organization."}
             </DialogDescription>
           </DialogHeader>
           <div className="py-2">
-            <HospitalityForm
+            <DepartmentsForm
               initialData={selectedItem}
-              vendorList={vendors}
               onSuccess={handleFormSuccess}
               onCancel={() => setFormOpen(false)}
             />
@@ -214,7 +182,7 @@ export default function HospitalityPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog Modal */}
+      {/* Delete Confirmation */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -222,10 +190,10 @@ export default function HospitalityPage() {
               <AlertTriangle className="h-6 w-6" />
             </div>
             <DialogTitle className="text-center text-lg font-bold text-foreground">
-              Delete Hospitality Device?
+              Delete Department?
             </DialogTitle>
             <DialogDescription className="text-center text-sm font-medium text-muted-foreground">
-              Are you absolutely sure you want to delete this hospitality device? This operation cannot be undone and will permanently purge the record from the database.
+              Are you sure you want to delete this department? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex items-center justify-center gap-2 pt-4 border-t border-border mt-4">
@@ -243,7 +211,7 @@ export default function HospitalityPage() {
               className="h-9 px-4 rounded-lg bg-rose-500 text-white font-semibold flex items-center justify-center gap-1.5 shadow-sm hover:bg-rose-600 flex-1"
             >
               {deleteLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Delete Device
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>

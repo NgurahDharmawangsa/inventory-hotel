@@ -1,19 +1,61 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 1. STAFF
+-- =========================================
+-- MASTER DATA TABLES
+-- =========================================
+
+-- 1. DEPARTMENTS
+CREATE TABLE departments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT UNIQUE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2. LOCATIONS
+CREATE TABLE locations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT UNIQUE NOT NULL,
+    type TEXT NOT NULL,
+    floor TEXT,
+    building TEXT,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 3. ROOMS
+CREATE TABLE rooms (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    room_number TEXT UNIQUE NOT NULL,
+    floor TEXT,
+    room_type TEXT,
+    status TEXT DEFAULT 'ACTIVE',
+    capacity INTEGER,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- =========================================
+-- MAIN TABLES
+-- =========================================
+
+-- 4. STAFF
 CREATE TABLE staff (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     employee_id TEXT UNIQUE NOT NULL,
     full_name TEXT NOT NULL,
-    department TEXT NOT NULL,
+    department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
     position TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'ACTIVE',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. VENDORS
+-- 5. VENDORS
 CREATE TABLE vendors (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
@@ -25,7 +67,7 @@ CREATE TABLE vendors (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. EMAILS
+-- 6. EMAILS
 CREATE TABLE emails (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email_address TEXT UNIQUE NOT NULL,
@@ -36,20 +78,28 @@ CREATE TABLE emails (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 4. HARDWARE
+-- 7. HARDWARE
 CREATE TABLE hardware (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     category TEXT NOT NULL,
-    location TEXT,
+    item_code TEXT,
+    department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+    location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+    room_id UUID REFERENCES rooms(id) ON DELETE SET NULL,
     status TEXT NOT NULL DEFAULT 'ACTIVE',
     staff_id UUID REFERENCES staff(id) ON DELETE SET NULL,
     vendor_id UUID REFERENCES vendors(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT chk_hardware_room_or_location CHECK (
+        (room_id IS NOT NULL AND location_id IS NULL)
+        OR (room_id IS NULL AND location_id IS NOT NULL)
+        OR (room_id IS NULL AND location_id IS NULL)
+    )
 );
 
--- 5. SOFTWARE
+-- 8. SOFTWARE
 CREATE TABLE software (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
@@ -61,41 +111,46 @@ CREATE TABLE software (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 6. NETWORKING
+-- 9. NETWORKING
 CREATE TABLE networking (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     device_type TEXT NOT NULL,
+    item_code TEXT,
     ip_address TEXT,
-    location TEXT,
+    department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+    location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+    room_id UUID REFERENCES rooms(id) ON DELETE SET NULL,
     status TEXT NOT NULL DEFAULT 'ONLINE',
     vendor_id UUID REFERENCES vendors(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT chk_networking_room_or_location CHECK (
+        (room_id IS NOT NULL AND location_id IS NULL)
+        OR (room_id IS NULL AND location_id IS NOT NULL)
+        OR (room_id IS NULL AND location_id IS NULL)
+    )
 );
 
--- 7. SECURITY
+-- 10. SECURITY
 CREATE TABLE security (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     device_type TEXT NOT NULL,
-    location TEXT,
+    item_code TEXT,
+    department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+    location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+    room_id UUID REFERENCES rooms(id) ON DELETE SET NULL,
     status TEXT NOT NULL DEFAULT 'ONLINE',
     vendor_id UUID REFERENCES vendors(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT chk_security_room_or_location CHECK (
+        (room_id IS NOT NULL AND location_id IS NULL)
+        OR (room_id IS NULL AND location_id IS NOT NULL)
+        OR (room_id IS NULL AND location_id IS NULL)
+    )
 );
 
--- 8. HOSPITALITY
-CREATE TABLE hospitality (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    device_type TEXT NOT NULL,
-    room_number TEXT,
-    status TEXT NOT NULL DEFAULT 'ACTIVE',
-    vendor_id UUID REFERENCES vendors(id) ON DELETE SET NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- 9. MAINTENANCE
+-- 11. MAINTENANCE
 CREATE TABLE maintenance (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     item_id UUID NOT NULL,
@@ -108,7 +163,7 @@ CREATE TABLE maintenance (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 10. BUDGETS
+-- 12. BUDGETS
 CREATE TABLE budgets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     year INTEGER NOT NULL,
@@ -118,3 +173,18 @@ CREATE TABLE budgets (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- =========================================
+-- INDEXES FOR PERFORMANCE
+-- =========================================
+
+CREATE INDEX idx_staff_department_id ON staff(department_id);
+CREATE INDEX idx_hardware_department_id ON hardware(department_id);
+CREATE INDEX idx_hardware_location_id ON hardware(location_id);
+CREATE INDEX idx_hardware_room_id ON hardware(room_id);
+CREATE INDEX idx_networking_department_id ON networking(department_id);
+CREATE INDEX idx_networking_location_id ON networking(location_id);
+CREATE INDEX idx_networking_room_id ON networking(room_id);
+CREATE INDEX idx_security_department_id ON security(department_id);
+CREATE INDEX idx_security_location_id ON security(location_id);
+CREATE INDEX idx_security_room_id ON security(room_id);

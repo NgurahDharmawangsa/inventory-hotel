@@ -45,8 +45,8 @@ export function SecurityTable({ items, onEdit, onDelete }: SecurityTableProps) {
           bVal = b.device_type || "";
           break;
         case "location":
-          aVal = a.location || "";
-          bVal = b.location || "";
+          aVal = a.department?.name || a.location?.name || a.room?.room_number || "";
+          bVal = b.department?.name || b.location?.name || b.room?.room_number || "";
           break;
         case "status":
           aVal = a.status || "";
@@ -165,7 +165,16 @@ export function SecurityTable({ items, onEdit, onDelete }: SecurityTableProps) {
 
               {/* Location */}
               <TableCell className="py-3 text-sm font-semibold text-muted-foreground">
-                {item.location || "—"}
+                {item.department && (
+                    <span>Dept: {item.department.name}<br /></span>
+                  )}
+                  {item.location && (
+                    <span>Loc: {item.location.name} ({item.location.type})</span>
+                  )}
+                  {item.room && (
+                    <span>Room {item.room.room_number}</span>
+                  )}
+                  {!item.department && !item.location && !item.room && "—"}
               </TableCell>
 
               {/* Status */}

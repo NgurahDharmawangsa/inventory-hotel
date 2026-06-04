@@ -9,15 +9,15 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { Staff } from "@/types/database.types";
+import { Staff, StaffWithRelations } from "@/types/database.types";
 import { Button } from "@/components/ui/button";
 import { Edit2, Trash2, Users, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 interface StaffTableProps {
-  items: Staff[];
-  onEdit: (item: Staff) => void;
+  items: StaffWithRelations[];
+  onEdit: (item: StaffWithRelations) => void;
   onDelete: (id: string) => void;
-  onRowClick?: (item: Staff) => void;
+  onRowClick?: (item: StaffWithRelations) => void;
 }
 
 export function StaffTable({ items, onEdit, onDelete, onRowClick }: StaffTableProps) {
@@ -48,8 +48,8 @@ export function StaffTable({ items, onEdit, onDelete, onRowClick }: StaffTablePr
           bVal = b.full_name || "";
           break;
         case "department":
-          aVal = a.department || "";
-          bVal = b.department || "";
+          aVal = a.department?.name || "";
+          bVal = b.department?.name || "";
           break;
         case "position":
           aVal = a.position || "";
@@ -165,7 +165,7 @@ export function StaffTable({ items, onEdit, onDelete, onRowClick }: StaffTablePr
 
               {/* Department */}
               <TableCell className="py-3 text-sm font-medium text-foreground">
-                {item.department}
+                {item.department?.name || "—"}
               </TableCell>
 
               {/* Position */}
