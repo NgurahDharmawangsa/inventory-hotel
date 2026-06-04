@@ -49,8 +49,8 @@ export function NetworkingTable({ items, onEdit, onDelete }: NetworkingTableProp
           bVal = b.ip_address || "";
           break;
         case "location":
-          aVal = a.location || "";
-          bVal = b.location || "";
+          aVal = a.department?.name || a.location?.name || a.room?.room_number || "";
+          bVal = b.department?.name || b.location?.name || b.room?.room_number || "";
           break;
         case "status":
           aVal = a.status || "";
@@ -177,7 +177,21 @@ export function NetworkingTable({ items, onEdit, onDelete }: NetworkingTableProp
 
               {/* Location */}
               <TableCell className="py-3 text-sm font-semibold text-muted-foreground">
-                {item.location || "—"}
+                                {item.department ? (
+                  item.room ? (
+                    <span>{item.department.name} / Room {item.room.room_number}</span>
+                  ) : item.location ? (
+                    <span>{item.department.name} / {item.location.name} ({item.location.type})</span>
+                  ) : (
+                    <span>{item.department.name}</span>
+                  )
+                ) : item.location ? (
+                  <span>{item.location.name} ({item.location.type})</span>
+                ) : item.room ? (
+                  <span>Room {item.room.room_number}</span>
+                ) : (
+                  "—"
+                )}
               </TableCell>
 
               {/* Status */}

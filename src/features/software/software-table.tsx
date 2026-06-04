@@ -241,7 +241,7 @@ export function SoftwareTable({ items, onEdit, onDelete }: SoftwareTableProps) {
                   {item.staff ? (
                     <div className="flex flex-col leading-none">
                       <span className="text-sm font-semibold">{item.staff.full_name}</span>
-                      <span className="text-[10px] text-muted-foreground">{item.staff.department}</span>
+                      <span className="text-[10px] text-muted-foreground">{item.staff.department_id?.name}</span>
                     </div>
                   ) : (
                     <span className="text-muted-foreground/30 font-semibold">Unassigned</span>

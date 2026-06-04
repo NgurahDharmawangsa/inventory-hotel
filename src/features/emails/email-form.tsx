@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { createEmailAction, updateEmailAction } from "@/app/actions/emails";
 import { getStaffAction } from "@/app/actions/staff";
-import { Staff, EmailAccount } from "@/types/database.types";
+import { Staff, StaffWithRelations, EmailAccount } from "@/types/database.types";
 import { Loader2 } from "lucide-react";
 
 interface EmailFormProps {
@@ -24,7 +24,7 @@ export function EmailForm({
   const [error, setError] = useState<string | null>(null);
 
   // Dynamic relational states
-  const [staffList, setStaffList] = useState<Staff[]>([]);
+  const [staffList, setStaffList] = useState<StaffWithRelations[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
 
   // Form states
@@ -154,7 +154,7 @@ export function EmailForm({
             <option value="">-- Unassigned / Idle Account --</option>
             {staffList.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.full_name} ({s.employee_id} - {s.department})
+                {s.full_name} ({s.employee_id} - {s.department?.name})
               </option>
             ))}
           </select>

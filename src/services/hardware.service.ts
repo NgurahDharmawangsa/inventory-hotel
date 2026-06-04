@@ -6,11 +6,12 @@ export class HardwareService {
   /**
    * Fetch all hardware assets, passing optional filters.
    */
-  static async getAllHardware(filters?: { query?: string; status?: string; location?: string }): Promise<HardwareWithRelations[]> {
+  static async getAllHardware(filters?: { query?: string; status?: string; location?: string; department?: string }): Promise<HardwareWithRelations[]> {
     return HardwareRepository.findAll({
       query: filters?.query?.trim(),
       status: filters?.status ? filters.status.toUpperCase() : undefined,
       location: filters?.location || undefined,
+      department: filters?.department || undefined,
     });
   }
 

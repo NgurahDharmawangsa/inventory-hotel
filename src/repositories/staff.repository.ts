@@ -1,20 +1,23 @@
 import { supabase } from "@/lib/supabase";
-import { EmailAccount, Hardware, Software, Staff, StaffDetail } from "@/types/database.types";
+import { EmailAccount, Hardware, Software, Staff, StaffDetail, StaffWithRelations } from "@/types/database.types";
 
 export class StaffRepository {
   /**
    * Fetch all staff members, supporting filters.
    */
-  static async findAll(filters?: { query?: string }): Promise<Staff[]> {
+  static async findAll(filters?: { query?: string }): Promise<StaffWithRelations[]> {
     let queryBuilder = supabase
       .from("staff")
-      .select("*")
+      .select(`
+        *,
+        department:department_id (id, name)
+      `)
       .order("full_name");
 
     if (filters?.query) {
       const q = `%${filters.query}%`;
       queryBuilder = queryBuilder.or(
-        `employee_id.ilike.${q},full_name.ilike.${q},department.ilike.${q},position.ilike.${q}`
+        `employee_id.ilike.${q},full_name.ilike.${q},position.ilike.${q}`
       );
     }
 
@@ -31,10 +34,13 @@ export class StaffRepository {
   /**
    * Find a staff member by ID.
    */
-  static async findById(id: string): Promise<Staff | null> {
+  static async findById(id: string): Promise<StaffWithRelations | null> {
     const { data, error } = await supabase
       .from("staff")
-      .select("*")
+      .select(`
+        *,
+        department:department_id (id, name)
+      `)
       .eq("id", id)
       .single();
 

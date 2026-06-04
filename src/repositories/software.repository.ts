@@ -5,7 +5,10 @@ export type SoftwareWithRelations = Software & {
   staff?: {
     id: string;
     full_name: string;
-    department: string;
+    department_id: {
+      id: string;
+      name: string;
+    } | null;
   } | null;
   vendor?: {
     id: string;
@@ -22,7 +25,7 @@ export class SoftwareRepository {
       .from("software")
       .select(`
         *,
-        staff:staff_id (id, full_name, department),
+        staff:staff_id (id, full_name, department_id (id, name)),
         vendor:vendor_id (id, name)
       `)
       .order("created_at", { ascending: false });
@@ -50,7 +53,7 @@ export class SoftwareRepository {
       .from("software")
       .select(`
         *,
-        staff:staff_id (id, full_name, department),
+        staff:staff_id (id, full_name, department_id (id, name)),
         vendor:vendor_id (id, name)
       `)
       .eq("id", id)

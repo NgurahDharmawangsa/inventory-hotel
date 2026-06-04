@@ -11,7 +11,7 @@ export type ActionResponse<T> =
 /**
  * Action to fetch all hardware assets based on query, status, and location.
  */
-export async function getHardwareAction(filters?: { query?: string; status?: string; location?: string }): Promise<ActionResponse<any>> {
+export async function getHardwareAction(filters?: { query?: string; status?: string; location?: string; department?: string }): Promise<ActionResponse<any>> {
   try {
     const data = await HardwareService.getAllHardware(filters);
     return { success: true, data };
@@ -91,7 +91,7 @@ export async function getRelationsAction(): Promise<ActionResponse<{ staff: any[
     // Fetch all active staff
     const { data: staff, error: staffError } = await supabase
       .from("staff")
-      .select("id, full_name, department")
+      .select("id, full_name, department_id, department:department_id (id, name)")
       .eq("status", "ACTIVE")
       .order("full_name", { ascending: true });
 

@@ -15,8 +15,8 @@ export class StaffValidator {
       throw new Error("Full name is required.");
     }
 
-    if (!data.department?.trim()) {
-      throw new Error("Department is required.");
+    if (!data.department_id?.trim()) {
+      throw new Error("Department selection is required.");
     }
 
     if (!data.position?.trim()) {
@@ -31,7 +31,7 @@ export class StaffValidator {
     return {
       employee_id: data.employee_id.trim().toUpperCase(),
       full_name: data.full_name.trim(),
-      department: data.department.trim(),
+      department_id: data.department_id.trim(),
       position: data.position.trim(),
       status
     };
@@ -57,11 +57,11 @@ export class StaffValidator {
       sanitizedData.full_name = data.full_name.trim();
     }
 
-    if (data.department !== undefined) {
-      if (!data.department?.trim()) {
-        throw new Error("Department cannot be empty.");
+    if (data.department_id !== undefined) {
+      if (!data.department_id?.trim()) {
+        throw new Error("Department selection cannot be empty.");
       }
-      sanitizedData.department = data.department.trim();
+      sanitizedData.department_id = data.department_id.trim();
     }
 
     if (data.position !== undefined) {

@@ -5,11 +5,29 @@ export type HardwareWithRelations = Hardware & {
   staff?: {
     id: string;
     full_name: string;
-    department: string;
+    employee_id: string;
+    department_id: {
+      id: string;
+      name: string;
+    } | null;
   } | null;
   vendor?: {
     id: string;
     name: string;
+  } | null;
+  department?: {
+    id: string;
+    name: string;
+  } | null;
+  location?: {
+    id: string;
+    name: string;
+    type: string;
+  } | null;
+  room?: {
+    id: string;
+    room_number: string;
+    floor: string | null;
   } | null;
 };
 
@@ -17,27 +35,55 @@ export class HardwareRepository {
   /**
    * Fetch all hardware items with optional filters and staff/vendor relations joined.
    */
-  static async findAll(filters?: { query?: string; status?: string; location?: string }): Promise<HardwareWithRelations[]> {
+  static async findAll(filters?: { query?: string; status?: string; location?: string; department?: string }): Promise<HardwareWithRelations[]> {
     let queryBuilder = supabase
       .from("hardware")
       .select(`
         *,
-        staff:staff_id (id, full_name, department),
-        vendor:vendor_id (id, name)
+         staff:staff_id (
+           id,
+           full_name,
+           employee_id,
+           department_id (
+             id,
+             name
+           )
+         ),
+         vendor:vendor_id (id, name),
+         department:department_id (id, name),
+         location:location_id (id, name, type),
+         room:room_id (id, room_number, floor)
       `)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false});
 
     if (filters?.status) {
       queryBuilder = queryBuilder.eq("status", filters.status);
     }
 
     if (filters?.location) {
-      queryBuilder = queryBuilder.eq("location", filters.location);
+      // Look up location IDs matching the given name, then filter by location_id
+      const { data: matchedLocations } = await supabase
+        .from("locations")
+        .select("id")
+        .eq("name", filters.location);
+
+      const ids = matchedLocations?.map((l: { id: string }) => l.id) ?? [];
+      queryBuilder = queryBuilder.in("location_id", ids.length > 0 ? ids : [null]);
     }
 
+    if (filters?.department) {
+      // Look up department IDs matching the given name, then filter by department_id
+      const { data: matchedDepartments } = await supabase
+        .from("departments")
+        .select("id")
+        .eq("name", filters.department);
+
+      const ids = matchedDepartments?.map((d: { id: string }) => d.id) ?? [];
+      queryBuilder = queryBuilder.in("department_id", ids.length > 0 ? ids : [null]);
+    }
     if (filters?.query) {
-      // Search in name, location, or item_code
-      queryBuilder = queryBuilder.or(`name.ilike.%${filters.query}%,location.ilike.%${filters.query}%,item_code.ilike.%${filters.query}%`);
+      // Search in name or item_code
+      queryBuilder = queryBuilder.or(`name.ilike.%${filters.query}%,item_code.ilike.%${filters.query}%`);
     }
 
     const { data, error } = await queryBuilder;
@@ -51,38 +97,39 @@ export class HardwareRepository {
   }
 
   /**
-   * Fetch distinct locations from hardware table.
+   * Fetch distinct locations from locations table.
+   */
+  /**
+   * Fetch distinct locations from locations table.
    */
   static async findDistinctLocations(): Promise<string[]> {
     const { data, error } = await supabase
-      .from("hardware")
-      .select("location")
-      .not("location", "is", null)
-      .order("location", { ascending: true });
+      .from("locations")
+      .select("name")
+      .order("name", { ascending: true });
 
     if (error) {
       console.error("Error in HardwareRepository.findDistinctLocations:", error);
       throw new Error(`Failed to fetch hardware locations: ${error.message}`);
     }
 
-    // Deduplicate locations
+    // Extract names (already unique)
     const locations = new Set<string>();
-    (data || []).forEach((item: { location: string | null }) => {
-      if (item.location) locations.add(item.location);
+    (data || []).forEach((item: { name: string | null }) => {
+      if (item.name) locations.add(item.name);
     });
 
     return Array.from(locations).sort();
   }
 
   /**
-   * Fetch distinct departments from staff table (for location dropdown suggestions).
+   * Fetch distinct department names from the departments table.
    */
   static async findStaffDepartments(): Promise<string[]> {
     const { data, error } = await supabase
-      .from("staff")
-      .select("department")
-      .not("department", "is", null)
-      .order("department", { ascending: true });
+      .from("departments")
+      .select("name")
+      .order("name", { ascending: true });
 
     if (error) {
       console.error("Error in HardwareRepository.findStaffDepartments:", error);
@@ -90,8 +137,8 @@ export class HardwareRepository {
     }
 
     const departments = new Set<string>();
-    (data || []).forEach((item: { department: string | null }) => {
-      if (item.department) departments.add(item.department);
+    (data || []).forEach((item: { name: string | null }) => {
+      if (item.name) departments.add(item.name);
     });
 
     return Array.from(departments).sort();
@@ -105,8 +152,16 @@ export class HardwareRepository {
       .from("hardware")
       .select(`
         *,
-        staff:staff_id (id, full_name, department),
-        vendor:vendor_id (id, name)
+         staff:staff_id (
+           id,
+           full_name,
+           employee_id,
+           department_id (
+             id,
+             name
+           )
+         ),
+         vendor:vendor_id (id, name)
       `)
       .eq("id", id)
       .single();

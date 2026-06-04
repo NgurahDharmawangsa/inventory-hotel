@@ -7,6 +7,7 @@ import {
   getStaffDetailAction,
   deleteStaffAction 
 } from "@/app/actions/staff";
+import { getDepartmentsAction } from "@/app/actions/departments";
 import { StaffTable } from "@/features/staff/staff-table";
 import { StaffForm } from "@/features/staff/staff-form";
 import { StaffTableSkeleton } from "@/features/staff/staff-skeleton";
@@ -33,6 +34,7 @@ import {
 
 export default function StaffPage() {
   const [items, setItems] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -66,6 +68,16 @@ export default function StaffPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    async function loadDepartments() {
+      const res = await getDepartmentsAction();
+      if (res.success) {
+        setDepartments(res.data || []);
+      }
+    }
+    loadDepartments();
+  }, []);
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
@@ -279,7 +291,7 @@ export default function StaffPage() {
                   <div className="rounded-xl border border-border bg-card p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Role</p>
                     <h3 className="text-base font-bold text-foreground mt-2">{detailItem.position}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{detailItem.department}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{detailItem.department?.name || "—"}</p>
                     <p className={`mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
                       detailItem.status === "ACTIVE"
                         ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
@@ -376,6 +388,7 @@ export default function StaffPage() {
           <div className="py-2">
             <StaffForm
               initialData={selectedItem}
+              departments={departments}
               onSuccess={handleFormSuccess}
               onCancel={() => setFormOpen(false)}
             />

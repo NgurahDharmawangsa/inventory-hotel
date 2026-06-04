@@ -10,6 +10,9 @@ import { Loader2 } from "lucide-react";
 interface NetworkingFormProps {
   initialData?: NetworkingWithRelations | null;
   vendorList: Array<{ id: string; name: string }>;
+  departments: Array<{ id: string; name: string }>;
+  locations: Array<{ id: string; name: string; type: string }>;
+  rooms: Array<{ id: string; room_number: string; floor?: string; room_type?: string }>;
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -17,6 +20,9 @@ interface NetworkingFormProps {
 export function NetworkingForm({
   initialData,
   vendorList,
+  departments,
+  locations,
+  rooms,
   onSuccess,
   onCancel
 }: NetworkingFormProps) {
@@ -24,11 +30,12 @@ export function NetworkingForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form states
   const [itemCode, setItemCode] = useState(initialData?.item_code || "");
-  const [deviceType, setDeviceType] = useState(initialData?.device_type || "");
+  const [deviceType, setDeviceType] = useState(initialData?.device_type || "Router");
   const [ipAddress, setIpAddress] = useState(initialData?.ip_address || "");
-  const [location, setLocation] = useState(initialData?.location || "");
+  const [departmentId, setDepartmentId] = useState(initialData?.department_id || "");
+  const [locationId, setLocationId] = useState(initialData?.location_id || "");
+  const [roomId, setRoomId] = useState(initialData?.room_id || "");
   const [status, setStatus] = useState(initialData?.status || "ONLINE");
   const [vendorId, setVendorId] = useState(initialData?.vendor_id || "");
 
@@ -37,8 +44,14 @@ export function NetworkingForm({
     setLoading(true);
     setError(null);
 
-    if (deviceType.trim().length < 3) {
-      setError("Device Type must be at least 3 characters long.");
+    if (deviceType.trim().length < 2) {
+      setError("Device Type must be at least 2 characters long.");
+      setLoading(false);
+      return;
+    }
+
+    if (locationId && roomId) {
+      setError("Please select either Location OR Room, not both.");
       setLoading(false);
       return;
     }
@@ -47,9 +60,11 @@ export function NetworkingForm({
       item_code: itemCode.trim() || undefined,
       device_type: deviceType.trim(),
       ip_address: ipAddress.trim() || undefined,
-      location: location.trim() || undefined,
+      department_id: departmentId === "" ? null : departmentId,
+      location_id: locationId === "" ? null : locationId,
+      room_id: roomId === "" ? null : roomId,
       status,
-      vendor_id: vendorId || undefined
+      vendor_id: vendorId === "" ? null : vendorId
     };
 
     try {
@@ -81,16 +96,15 @@ export function NetworkingForm({
       )}
 
       <div className="space-y-3">
-        <div className="grid grid-cols-3 gap-4">
-          {/* Item Code */}
-          <div className="space-y-1 col-span-1">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
             <label htmlFor="itemCode" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
               Item Code
             </label>
             <input
               id="itemCode"
               type="text"
-              placeholder="e.g. NW-SW-001"
+              placeholder="e.g. NW-RT-001"
               value={itemCode}
               onChange={(e) => setItemCode(e.target.value)}
               disabled={loading}
@@ -98,26 +112,27 @@ export function NetworkingForm({
             />
           </div>
 
-          {/* Device Type */}
-          <div className="space-y-1 col-span-2">
+          <div className="space-y-1">
             <label htmlFor="deviceType" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
               Device Type *
             </label>
-            <input
+            <select
               id="deviceType"
-              type="text"
-              required
-              placeholder="e.g. Cisco SG350-28 Switch"
               value={deviceType}
               onChange={(e) => setDeviceType(e.target.value)}
               disabled={loading}
-              className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            />
+              className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+            >
+              <option value="Router">Router</option>
+              <option value="Switch">Switch</option>
+              <option value="Firewall">Firewall</option>
+              <option value="Access Point">Access Point</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          {/* IP Address */}
           <div className="space-y-1">
             <label htmlFor="ipAddress" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
               IP Address
@@ -125,15 +140,14 @@ export function NetworkingForm({
             <input
               id="ipAddress"
               type="text"
-              placeholder="e.g. 192.168.10.15"
+              placeholder="e.g. 192.168.1.1"
               value={ipAddress}
               onChange={(e) => setIpAddress(e.target.value)}
               disabled={loading}
-              className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 font-mono text-[13px] tracking-wide"
+              className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 font-mono"
             />
           </div>
 
-          {/* Status */}
           <div className="space-y-1">
             <label htmlFor="status" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
               Status *
@@ -141,7 +155,7 @@ export function NetworkingForm({
             <select
               id="status"
               value={status}
-              onChange={(e) => setStatus(e.target.value as "ONLINE" | "OFFLINE" | "MAINTENANCE")}
+               onChange={(e) => setStatus(e.target.value as 'ONLINE' | 'OFFLINE' | 'MAINTENANCE')}
               disabled={loading}
               className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
             >
@@ -152,47 +166,93 @@ export function NetworkingForm({
           </div>
         </div>
 
+        <div className="space-y-1">
+          <label htmlFor="department" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+            Department
+          </label>
+          <select
+            id="department"
+            value={departmentId}
+            onChange={(e) => setDepartmentId(e.target.value)}
+            disabled={loading}
+            className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+          >
+            <option value="">Select department...</option>
+            {departments.map((dept) => (
+              <option key={dept.id} value={dept.id}>{dept.name}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
-          {/* Location */}
           <div className="space-y-1">
             <label htmlFor="location" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
               Location
             </label>
-            <input
-              id="location"
-              type="text"
-              placeholder="e.g. Server Room, MDF Room"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              disabled={loading}
-              className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
-            />
-          </div>
-
-          {/* Vendor */}
-          <div className="space-y-1">
-            <label htmlFor="vendor" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-              Vendor Partner
-            </label>
             <select
-              id="vendor"
-              value={vendorId}
-              onChange={(e) => setVendorId(e.target.value)}
-              disabled={loading}
+              id="location"
+              value={locationId}
+              onChange={(e) => {
+                setLocationId(e.target.value);
+                if (e.target.value) setRoomId("");
+              }}
+              disabled={loading || !!roomId}
               className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
             >
-              <option value="">None</option>
-              {vendorList.map((vendor) => (
-                <option key={vendor.id} value={vendor.id}>
-                  {vendor.name}
+              <option value="">Select location...</option>
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id}>{loc.name} ({loc.type})</option>
+              ))}
+            </select>
+            {roomId && <p className="text-xs text-muted-foreground">Disabled (Room selected)</p>}
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="room" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+              Room
+            </label>
+            <select
+              id="room"
+              value={roomId}
+              onChange={(e) => {
+                setRoomId(e.target.value);
+                if (e.target.value) setLocationId("");
+              }}
+              disabled={loading || !!locationId}
+              className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+            >
+              <option value="">Select room...</option>
+              {rooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {room.room_number}{room.floor ? ` (${room.floor})` : ''}
                 </option>
               ))}
             </select>
+            {locationId && <p className="text-xs text-muted-foreground">Disabled (Location selected)</p>}
           </div>
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="vendor" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+            Vendor Partner
+          </label>
+          <select
+            id="vendor"
+            value={vendorId}
+            onChange={(e) => setVendorId(e.target.value)}
+            disabled={loading}
+            className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+          >
+            <option value="">None</option>
+            {vendorList.map((vendor) => (
+              <option key={vendor.id} value={vendor.id}>
+                {vendor.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Buttons */}
       <div className="flex items-center justify-end gap-2 pt-4 border-t border-border mt-6">
         <Button
           type="button"

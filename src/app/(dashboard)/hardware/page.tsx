@@ -9,6 +9,9 @@ import {
    getRelationsAction, 
    deleteHardwareAction 
 } from "@/app/actions/hardware";
+import { getDepartmentsAction } from "@/app/actions/departments";
+import { getLocationsAction } from "@/app/actions/locations";
+import { getRoomsAction } from "@/app/actions/rooms";
 import { HardwareWithRelations } from "@/repositories/hardware.repository";
 import { HardwareTable } from "@/features/hardware/hardware-table";
 import { HardwareForm } from "@/features/hardware/hardware-form";
@@ -47,6 +50,9 @@ export default function HardwarePage() {
   const [items, setItems] = useState<HardwareWithRelations[]>([]);
   const [staff, setStaff] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [locations, setLocations] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filter states
@@ -54,6 +60,7 @@ export default function HardwarePage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [locationFilter, setLocationFilter] = useState("ALL");
   const [locationOptions, setLocationOptions] = useState<string[]>([]);
+  const [departmentFilter, setDepartmentFilter] = useState("ALL");
   const [departmentOptions, setDepartmentOptions] = useState<string[]>([]);
 
   // Dialog states
@@ -66,12 +73,15 @@ export default function HardwarePage() {
   // Notifications
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // Fetch relations, departments, and locations once on mount
+  // Fetch relations, master data once on mount
   useEffect(() => {
     async function loadInitialData() {
-      const [relationsRes, deptRes] = await Promise.all([
+      const [relationsRes, deptRes, departmentsRes, locationsRes, roomsRes] = await Promise.all([
         getRelationsAction(),
         getHardwareDepartmentOptionsAction(),
+        getDepartmentsAction(),
+        getLocationsAction(),
+        getRoomsAction(),
       ]);
       if (relationsRes.success) {
         setStaff(relationsRes.data.staff);
@@ -79,6 +89,15 @@ export default function HardwarePage() {
       }
       if (deptRes.success) {
         setDepartmentOptions(deptRes.data);
+      }
+      if (departmentsRes.success) {
+        setDepartments(departmentsRes.data);
+      }
+      if (locationsRes.success) {
+        setLocations(locationsRes.data);
+      }
+      if (roomsRes.success) {
+        setRooms(roomsRes.data);
       }
     }
     loadInitialData();
@@ -102,6 +121,7 @@ export default function HardwarePage() {
         query: searchQuery || undefined,
         status: statusFilter !== "ALL" ? statusFilter : undefined,
         location: locationFilter !== "ALL" ? locationFilter : undefined,
+        department: departmentFilter !== "ALL" ? departmentFilter : undefined,
       });
       if (res.success) {
         setItems(res.data);
@@ -122,7 +142,7 @@ export default function HardwarePage() {
     }, 300); // 300ms debounce for search input
 
     return () => clearTimeout(delayDebounce);
-  }, [searchQuery, statusFilter, locationFilter]);
+  }, [searchQuery, statusFilter, locationFilter, departmentFilter]);
 
   const showNotification = (type: "success" | "error", message: string) => {
     setNotification({ type, message });
@@ -254,7 +274,7 @@ export default function HardwarePage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search by asset name or location..."
+            placeholder="Search by asset name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex h-10 w-full rounded-lg border border-input bg-card pl-10 pr-4 text-sm shadow-xs transition-colors placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -320,6 +340,9 @@ export default function HardwarePage() {
               staffList={staff}
               vendorList={vendors}
               departmentOptions={departmentOptions}
+              departments={departments}
+              locations={locations}
+              rooms={rooms}
               onSuccess={handleFormSuccess}
               onCancel={() => setFormOpen(false)}
             />
@@ -333,6 +356,20 @@ export default function HardwarePage() {
           <DialogHeader>
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/10 text-rose-500 mb-2">
               <AlertTriangle className="h-6 w-6" />
+            </div>
+            {/* Department Dropdown */}
+            <div className="flex items-center gap-2 shrink-0">
+              <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
+              <select
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+                className="flex h-10 w-48 rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="ALL">All Departments</option>
+                {departmentOptions.map((dept) => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
             </div>
             <DialogTitle className="text-center text-lg font-bold text-foreground">
               Delete Hardware Asset?

@@ -8,6 +8,7 @@ import {
   Wrench,
   Wallet,
   Users,
+  Database,
   Building2,
   Mail,
   type LucideIcon,
@@ -24,6 +25,11 @@ export const navItems: NavItem[] = [
     label: "Dashboard",
     href: "/",
     icon: LayoutDashboard,
+  },
+  {
+    label: "Master Data",
+    href: "/master-data",
+    icon: Database,
   },
   {
     label: "Hardware",
@@ -44,11 +50,6 @@ export const navItems: NavItem[] = [
     label: "Security",
     href: "/security",
     icon: Shield,
-  },
-  {
-    label: "Hospitality",
-    href: "/hospitality",
-    icon: Hotel,
   },
   {
     label: "Maintenance",

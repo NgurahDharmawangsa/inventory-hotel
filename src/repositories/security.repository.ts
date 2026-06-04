@@ -6,6 +6,20 @@ export type SecurityWithRelations = Security & {
     id: string;
     name: string;
   } | null;
+  department?: {
+    id: string;
+    name: string;
+  } | null;
+  location?: {
+    id: string;
+    name: string;
+    type: string;
+  } | null;
+  room?: {
+    id: string;
+    room_number: string;
+    floor: string | null;
+  } | null;
 };
 
 export class SecurityRepository {
@@ -17,14 +31,17 @@ export class SecurityRepository {
       .from("security")
       .select(`
         *,
-        vendor:vendor_id (id, name)
+        vendor:vendor_id (id, name),
+        department:department_id (id, name),
+        location:location_id (id, name, type),
+        room:room_id (id, room_number, floor)
       `)
       .order("created_at", { ascending: false });
 
     if (filters?.query) {
-      // Search in device_type, location, or item_code
+      // Search in device_type and item_code (location removed per Phase 9 Task 6)
       queryBuilder = queryBuilder.or(
-        `device_type.ilike.%${filters.query}%,location.ilike.%${filters.query}%,item_code.ilike.%${filters.query}%`
+        `device_type.ilike.%${filters.query}%,item_code.ilike.%${filters.query}%`
       );
     }
 
@@ -46,7 +63,10 @@ export class SecurityRepository {
       .from("security")
       .select(`
         *,
-        vendor:vendor_id (id, name)
+        vendor:vendor_id (id, name),
+        department:department_id (id, name),
+        location:location_id (id, name, type),
+        room:room_id (id, room_number, floor)
       `)
       .eq("id", id)
       .single();

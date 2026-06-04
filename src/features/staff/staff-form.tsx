@@ -9,12 +9,14 @@ import { Loader2 } from "lucide-react";
 
 interface StaffFormProps {
   initialData?: Staff | null;
+  departments: Array<{ id: string; name: string }>;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
 export function StaffForm({
   initialData,
+  departments,
   onSuccess,
   onCancel
 }: StaffFormProps) {
@@ -25,7 +27,7 @@ export function StaffForm({
   // Form states
   const [employeeId, setEmployeeId] = useState<string>(initialData?.employee_id || "");
   const [fullName, setFullName] = useState<string>(initialData?.full_name || "");
-  const [department, setDepartment] = useState<string>(initialData?.department || "");
+  const [departmentId, setDepartmentId] = useState<string>(initialData?.department_id || "");
   const [position, setPosition] = useState<string>(initialData?.position || "");
   const [status, setStatus] = useState<Staff["status"]>(initialData?.status || "ACTIVE");
 
@@ -46,8 +48,8 @@ export function StaffForm({
       return;
     }
 
-    if (!department.trim()) {
-      setError("Department is required.");
+    if (!departmentId.trim()) {
+      setError("Department selection is required.");
       setLoading(false);
       return;
     }
@@ -61,7 +63,7 @@ export function StaffForm({
     const payload = {
       employee_id: employeeId.trim().toUpperCase(),
       full_name: fullName.trim(),
-      department: department.trim(),
+      department_id: departmentId.trim(),
       position: position.trim(),
       status
     };
@@ -136,16 +138,19 @@ export function StaffForm({
             <label htmlFor="department" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
               Department *
             </label>
-            <input
+            <select
               id="department"
-              type="text"
               required
-              placeholder="E.g. IT, Front Office, HR"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
+              value={departmentId}
+              onChange={(e) => setDepartmentId(e.target.value)}
               disabled={loading}
               className="flex h-9 w-full rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
-            />
+            >
+              <option value="">Select department...</option>
+              {departments.map((dept) => (
+                <option key={dept.id} value={dept.id}>{dept.name}</option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1">

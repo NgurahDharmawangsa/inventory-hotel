@@ -6,6 +6,20 @@ export type NetworkingWithRelations = Networking & {
     id: string;
     name: string;
   } | null;
+  department?: {
+    id: string;
+    name: string;
+  } | null;
+  location?: {
+    id: string;
+    name: string;
+    type: string;
+  } | null;
+  room?: {
+    id: string;
+    room_number: string;
+    floor: string | null;
+  } | null;
 };
 
 export class NetworkingRepository {
@@ -17,15 +31,16 @@ export class NetworkingRepository {
       .from("networking")
       .select(`
         *,
-        vendor:vendor_id (id, name)
+        vendor:vendor_id (id, name),
+        department:department_id (id, name),
+        location:location_id (id, name, type),
+        room:room_id (id, room_number, floor)
       `)
       .order("created_at", { ascending: false });
 
     if (filters?.query) {
-      // Search in device_type, ip_address, location, or item_code
-      queryBuilder = queryBuilder.or(
-        `device_type.ilike.%${filters.query}%,ip_address.ilike.%${filters.query}%,location.ilike.%${filters.query}%,item_code.ilike.%${filters.query}%`
-      );
+      // Search in device_type, ip_address, or item_code
+      queryBuilder = queryBuilder.or(`device_type.ilike.%${filters.query}%,ip_address.ilike.%${filters.query}%,item_code.ilike.%${filters.query}%`);
     }
 
     const { data, error } = await queryBuilder;
@@ -46,7 +61,10 @@ export class NetworkingRepository {
       .from("networking")
       .select(`
         *,
-        vendor:vendor_id (id, name)
+        vendor:vendor_id (id, name),
+        department:department_id (id, name),
+        location:location_id (id, name, type),
+        room:room_id (id, room_number, floor)
       `)
       .eq("id", id)
       .single();
