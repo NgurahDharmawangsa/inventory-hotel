@@ -1,6 +1,12 @@
 import { supabase } from "@/lib/supabase";
 import { Hardware } from "@/types/database.types";
 
+export type LocationRoomOption = {
+  label: string;
+  value: string;
+  group: 'Location' | 'Room';
+};
+
 export type HardwareWithRelations = Hardware & {
   staff?: {
     id: string;
@@ -61,14 +67,26 @@ export class HardwareRepository {
     }
 
     if (filters?.location) {
-      // Look up location IDs matching the given name, then filter by location_id
-      const { data: matchedLocations } = await supabase
-        .from("locations")
-        .select("id")
-        .eq("name", filters.location);
+      if (filters.location.startsWith("room:")) {
+        // Filter by room number (strip "room:" prefix)
+        const roomNumber = filters.location.replace("room:", "");
+        const { data: matchedRooms } = await supabase
+          .from("rooms")
+          .select("id")
+          .eq("room_number", roomNumber);
 
-      const ids = matchedLocations?.map((l: { id: string }) => l.id) ?? [];
-      queryBuilder = queryBuilder.in("location_id", ids.length > 0 ? ids : [null]);
+        const ids = matchedRooms?.map((r: { id: string }) => r.id) ?? [];
+        queryBuilder = queryBuilder.in("room_id", ids.length > 0 ? ids : [null]);
+      } else {
+        // Filter by location name
+        const { data: matchedLocations } = await supabase
+          .from("locations")
+          .select("id")
+          .eq("name", filters.location);
+
+        const ids = matchedLocations?.map((l: { id: string }) => l.id) ?? [];
+        queryBuilder = queryBuilder.in("location_id", ids.length > 0 ? ids : [null]);
+      }
     }
 
     if (filters?.department) {
@@ -97,29 +115,55 @@ export class HardwareRepository {
   }
 
   /**
-   * Fetch distinct locations from locations table.
+   * Fetch distinct locations and rooms for the filter dropdown.
+   * Returns locations first (sorted A-Z), then rooms (sorted numerically).
+   * Location values are plain names (e.g. "Lobby"), room values are
+   * prefixed with "room:" (e.g. "room:101") for disambiguation in filter logic.
    */
-  /**
-   * Fetch distinct locations from locations table.
-   */
-  static async findDistinctLocations(): Promise<string[]> {
-    const { data, error } = await supabase
+  static async findDistinctLocations(): Promise<LocationRoomOption[]> {
+    // Fetch locations
+    const { data: locationData, error: locError } = await supabase
       .from("locations")
       .select("name")
       .order("name", { ascending: true });
 
-    if (error) {
-      console.error("Error in HardwareRepository.findDistinctLocations:", error);
-      throw new Error(`Failed to fetch hardware locations: ${error.message}`);
+    if (locError) {
+      console.error("Error in HardwareRepository.findDistinctLocations:", locError);
+      throw new Error(`Failed to fetch locations: ${locError.message}`);
     }
 
-    // Extract names (already unique)
-    const locations = new Set<string>();
-    (data || []).forEach((item: { name: string | null }) => {
-      if (item.name) locations.add(item.name);
+    // Fetch rooms
+    const { data: roomData, error: roomError } = await supabase
+      .from("rooms")
+      .select("room_number")
+      .order("room_number", { ascending: true });
+
+    if (roomError) {
+      console.error("Error in HardwareRepository.findDistinctLocations:", roomError);
+      throw new Error(`Failed to fetch rooms: ${roomError.message}`);
+    }
+
+    const options: LocationRoomOption[] = [];
+
+    // Add locations (deduplicated)
+    const seenLocations = new Set<string>();
+    (locationData || []).forEach((item: { name: string | null }) => {
+      if (item.name && !seenLocations.has(item.name)) {
+        seenLocations.add(item.name);
+        options.push({ label: item.name, value: item.name, group: 'Location' });
+      }
     });
 
-    return Array.from(locations).sort();
+    // Add rooms (deduplicated)
+    const seenRooms = new Set<string>();
+    (roomData || []).forEach((item: { room_number: string | null }) => {
+      if (item.room_number && !seenRooms.has(item.room_number)) {
+        seenRooms.add(item.room_number);
+        options.push({ label: item.room_number, value: `room:${item.room_number}`, group: 'Room' });
+      }
+    });
+
+    return options;
   }
 
   /**
@@ -161,7 +205,10 @@ export class HardwareRepository {
              name
            )
          ),
-         vendor:vendor_id (id, name)
+         vendor:vendor_id (id, name),
+         department:department_id (id, name),
+         location:location_id (id, name, type),
+         room:room_id (id, room_number, floor)
       `)
       .eq("id", id)
       .single();
@@ -201,7 +248,10 @@ export class HardwareRepository {
   static async update(id: string, data: Partial<Omit<Hardware, "id" | "created_at" | "updated_at">>): Promise<Hardware> {
     const { data: updatedAsset, error } = await supabase
       .from("hardware")
-      .update(data)
+      .update({
+        ...data,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", id)
       .select()
       .single();

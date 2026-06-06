@@ -1,6 +1,12 @@
 import { supabase } from "@/lib/supabase";
 import { Security } from "@/types/database.types";
 
+export type LocationRoomOption = {
+  label: string;
+  value: string;
+  group: 'Location' | 'Room';
+};
+
 export type SecurityWithRelations = Security & {
   vendor?: {
     id: string;
@@ -26,7 +32,7 @@ export class SecurityRepository {
   /**
    * Fetch all security items with optional filters and vendor relation joined.
    */
-  static async findAll(filters?: { query?: string }): Promise<SecurityWithRelations[]> {
+  static async findAll(filters?: { query?: string; location?: string }): Promise<SecurityWithRelations[]> {
     let queryBuilder = supabase
       .from("security")
       .select(`
@@ -37,6 +43,27 @@ export class SecurityRepository {
         room:room_id (id, room_number, floor)
       `)
       .order("created_at", { ascending: false });
+
+    if (filters?.location) {
+      if (filters.location.startsWith("room:")) {
+        const roomNumber = filters.location.replace("room:", "");
+        const { data: matchedRooms } = await supabase
+          .from("rooms")
+          .select("id")
+          .eq("room_number", roomNumber);
+
+        const ids = matchedRooms?.map((r: { id: string }) => r.id) ?? [];
+        queryBuilder = queryBuilder.in("room_id", ids.length > 0 ? ids : [null]);
+      } else {
+        const { data: matchedLocations } = await supabase
+          .from("locations")
+          .select("id")
+          .eq("name", filters.location);
+
+        const ids = matchedLocations?.map((l: { id: string }) => l.id) ?? [];
+        queryBuilder = queryBuilder.in("location_id", ids.length > 0 ? ids : [null]);
+      }
+    }
 
     if (filters?.query) {
       // Search in device_type and item_code (location removed per Phase 9 Task 6)
@@ -53,6 +80,51 @@ export class SecurityRepository {
     }
 
     return (data || []) as SecurityWithRelations[];
+  }
+
+  /**
+   * Fetch distinct locations and rooms for the filter dropdown.
+   */
+  static async findDistinctLocations(): Promise<LocationRoomOption[]> {
+    const { data: locationData, error: locError } = await supabase
+      .from("locations")
+      .select("name")
+      .order("name", { ascending: true });
+
+    if (locError) {
+      console.error("Error in SecurityRepository.findDistinctLocations:", locError);
+      throw new Error(`Failed to fetch locations: ${locError.message}`);
+    }
+
+    const { data: roomData, error: roomError } = await supabase
+      .from("rooms")
+      .select("room_number")
+      .order("room_number", { ascending: true });
+
+    if (roomError) {
+      console.error("Error in SecurityRepository.findDistinctLocations:", roomError);
+      throw new Error(`Failed to fetch rooms: ${roomError.message}`);
+    }
+
+    const options: LocationRoomOption[] = [];
+
+    const seenLocations = new Set<string>();
+    (locationData || []).forEach((item: { name: string | null }) => {
+      if (item.name && !seenLocations.has(item.name)) {
+        seenLocations.add(item.name);
+        options.push({ label: item.name, value: item.name, group: 'Location' });
+      }
+    });
+
+    const seenRooms = new Set<string>();
+    (roomData || []).forEach((item: { room_number: string | null }) => {
+      if (item.room_number && !seenRooms.has(item.room_number)) {
+        seenRooms.add(item.room_number);
+        options.push({ label: item.room_number, value: `room:${item.room_number}`, group: 'Room' });
+      }
+    });
+
+    return options;
   }
 
   /**

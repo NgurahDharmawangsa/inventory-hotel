@@ -3,14 +3,17 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { 
-  getNetworkingAction, 
-  deleteNetworkingAction 
+   getNetworkingAction, 
+   getNetworkingLocationsAction, 
+   deleteNetworkingAction 
 } from "@/app/actions/networking";
+import { LocationRoomOption } from "@/repositories/networking.repository";
 import { getRelationsAction } from "@/app/actions/hardware";
 import { getDepartmentsAction } from "@/app/actions/departments";
 import { getLocationsAction } from "@/app/actions/locations";
 import { getRoomsAction } from "@/app/actions/rooms";
 import { NetworkingWithRelations } from "@/repositories/networking.repository";
+import { LocationRoomFilter } from "@/components/filters/location-room-filter";
 import { NetworkingTable } from "@/features/networking/networking-table";
 import { NetworkingForm } from "@/features/networking/networking-form";
 import { NetworkingTableSkeleton } from "@/features/networking/networking-skeleton";
@@ -42,6 +45,8 @@ export default function NetworkingPage() {
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
+  const [locationFilter, setLocationFilter] = useState("ALL");
+  const [locationOptions, setLocationOptions] = useState<LocationRoomOption[]>([]);
 
   // Dialog states
   const [formOpen, setFormOpen] = useState(false);
@@ -76,14 +81,23 @@ export default function NetworkingPage() {
       }
     }
     loadInitialData();
+    refreshLocationOptions();
   }, []);
+
+  const refreshLocationOptions = async () => {
+    const res = await getNetworkingLocationsAction();
+    if (res.success) {
+      setLocationOptions(res.data);
+    }
+  };
 
   // Fetch networking list based on filters
   const loadNetworking = async () => {
     setLoading(true);
     try {
       const res = await getNetworkingAction({
-        query: searchQuery || undefined
+        query: searchQuery || undefined,
+        location: locationFilter !== "ALL" ? locationFilter : undefined,
       });
       if (res.success) {
         setItems(res.data || []);
@@ -104,7 +118,7 @@ export default function NetworkingPage() {
     }, 300); // 300ms debounce for search input
 
     return () => clearTimeout(delayDebounce);
-  }, [searchQuery]);
+  }, [searchQuery, locationFilter]);
 
   const showNotification = (type: "success" | "error", message: string) => {
     setNotification({ type, message });
@@ -197,6 +211,15 @@ export default function NetworkingPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex h-10 w-full rounded-lg border border-input bg-card pl-10 pr-4 text-sm shadow-xs transition-colors placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+        </div>
+
+        {/* Location/Room Filter */}
+        <div className="flex items-center gap-2 shrink-0">
+          <LocationRoomFilter
+            value={locationFilter}
+            onChange={setLocationFilter}
+            options={locationOptions}
           />
         </div>
       </div>

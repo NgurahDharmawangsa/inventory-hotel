@@ -1,4 +1,4 @@
-import { NetworkingRepository, NetworkingWithRelations } from "@/repositories/networking.repository";
+import { NetworkingRepository, NetworkingWithRelations, LocationRoomOption } from "@/repositories/networking.repository";
 import { NetworkingValidator } from "@/validators/networking.validator";
 import { Networking } from "@/types/database.types";
 
@@ -6,8 +6,11 @@ export class NetworkingService {
   /**
    * Fetch all networking devices.
    */
-  static async getAllDevices(filters?: { query?: string }): Promise<NetworkingWithRelations[]> {
-    return await NetworkingRepository.findAll(filters);
+  static async getAllDevices(filters?: { query?: string; location?: string }): Promise<NetworkingWithRelations[]> {
+    return await NetworkingRepository.findAll({
+      query: filters?.query?.trim(),
+      location: filters?.location || undefined,
+    });
   }
 
   /**
@@ -37,6 +40,13 @@ export class NetworkingService {
     }
     const validatedData = NetworkingValidator.validateUpdate(data);
     return await NetworkingRepository.update(id, validatedData);
+  }
+
+  /**
+   * Fetch distinct locations and rooms for the filter dropdown.
+   */
+  static async getDistinctLocations(): Promise<LocationRoomOption[]> {
+    return NetworkingRepository.findDistinctLocations();
   }
 
   /**

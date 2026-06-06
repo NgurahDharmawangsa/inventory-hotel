@@ -7,12 +7,13 @@ import {
    getHardwareLocationsAction, 
    getHardwareDepartmentOptionsAction, 
    getRelationsAction, 
-   deleteHardwareAction 
+   deleteHardwareAction,
+   getHardwareDetailAction 
 } from "@/app/actions/hardware";
 import { getDepartmentsAction } from "@/app/actions/departments";
 import { getLocationsAction } from "@/app/actions/locations";
 import { getRoomsAction } from "@/app/actions/rooms";
-import { HardwareWithRelations } from "@/repositories/hardware.repository";
+import { HardwareWithRelations, LocationRoomOption } from "@/repositories/hardware.repository";
 import { HardwareTable } from "@/features/hardware/hardware-table";
 import { HardwareForm } from "@/features/hardware/hardware-form";
 import { HardwareTableSkeleton } from "@/features/hardware/hardware-skeleton";
@@ -35,7 +36,15 @@ import {
   AlertTriangle,
   Download,
   FileDown,
-  FileJson
+  FileJson,
+  Building2,
+  MapPin,
+  DoorOpen,
+  User,
+  Briefcase,
+  Tag,
+  Hash,
+  FileText
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -43,7 +52,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { exportToCSV, exportToJSON, flattenForExport, generateExportFilename } from "@/lib/export-utils";
+import { exportToCSV, exportToJSON, flattenHardwareForExport, generateExportFilename } from "@/lib/export-utils";
+import { LocationRoomFilter } from "@/components/filters/location-room-filter";
 
 export default function HardwarePage() {
   // Data states
@@ -59,7 +69,7 @@ export default function HardwarePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [locationFilter, setLocationFilter] = useState("ALL");
-  const [locationOptions, setLocationOptions] = useState<string[]>([]);
+  const [locationOptions, setLocationOptions] = useState<LocationRoomOption[]>([]);
   const [departmentFilter, setDepartmentFilter] = useState("ALL");
   const [departmentOptions, setDepartmentOptions] = useState<string[]>([]);
 
@@ -69,6 +79,11 @@ export default function HardwarePage() {
   const [selectedItem, setSelectedItem] = useState<HardwareWithRelations | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Detail modal states
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState<HardwareWithRelations | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   // Notifications
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -193,6 +208,63 @@ export default function HardwarePage() {
     }
   };
 
+  const handleRowClick = async (item: HardwareWithRelations) => {
+    setDetailLoading(true);
+    setDetailOpen(true);
+    try {
+      const res = await getHardwareDetailAction(item.id);
+      if (res.success) {
+        setDetailItem(res.data);
+      } else {
+        showNotification("error", res.error || "Failed to load hardware detail.");
+      }
+    } catch (err: any) {
+      showNotification("error", err.message || "Failed to load hardware detail.");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "ACTIVE":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-[#2eb87a]/12 text-[#2eb87a] uppercase tracking-wider">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#2eb87a]" />
+            Active
+          </span>
+        );
+      case "BROKEN":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-[#e05252]/12 text-[#e05252] uppercase tracking-wider">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#e05252]" />
+            Broken
+          </span>
+        );
+      case "REPAIR":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-[#f5853d]/12 text-[#f5853d] uppercase tracking-wider">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#f5853d]" />
+            Repair
+          </span>
+        );
+      case "DISPOSED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-[#5a6480]/12 text-[#8a95b0] uppercase tracking-wider">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#8a95b0]" />
+            Disposed
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-muted text-muted-foreground uppercase tracking-wider">
+            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+            {status}
+          </span>
+        );
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Notification Banner */}
@@ -233,7 +305,7 @@ export default function HardwarePage() {
               <DropdownMenuItem 
                 onClick={() => {
                   const filename = generateExportFilename("hardware-assets");
-                  const flattenedData = flattenForExport(items);
+                  const flattenedData = flattenHardwareForExport(items);
                   exportToCSV(flattenedData, filename);
                   showNotification("success", "Hardware data exported to CSV successfully!");
                 }}
@@ -245,7 +317,8 @@ export default function HardwarePage() {
               <DropdownMenuItem 
                 onClick={() => {
                   const filename = generateExportFilename("hardware-assets");
-                  exportToJSON(items, filename);
+                  const flattenedData = flattenHardwareForExport(items);
+                  exportToJSON(flattenedData, filename);
                   showNotification("success", "Hardware data exported to JSON successfully!");
                 }}
                 className="cursor-pointer"
@@ -281,9 +354,24 @@ export default function HardwarePage() {
           />
         </div>
 
-        {/* Status Dropdown */}
+        {/* Department Dropdown */}
         <div className="flex items-center gap-2 shrink-0">
           <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
+          <select
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+            className="flex h-10 w-48 rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="ALL">All Departments</option>
+            {departmentOptions.map((dept) => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Status Dropdown */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" /> */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -297,18 +385,13 @@ export default function HardwarePage() {
           </select>
         </div>
 
-        {/* Location Dropdown */}
+        {/* Location/Room Filter */}
         <div className="flex items-center gap-2 shrink-0">
-          <select
+          <LocationRoomFilter
             value={locationFilter}
-            onChange={(e) => setLocationFilter(e.target.value)}
-            className="flex h-10 w-48 rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <option value="ALL">All Locations</option>
-            {locationOptions.map((loc) => (
-              <option key={loc} value={loc}>{loc}</option>
-            ))}
-          </select>
+            onChange={setLocationFilter}
+            options={locationOptions}
+          />
         </div>
       </div>
 
@@ -320,8 +403,149 @@ export default function HardwarePage() {
           items={items} 
           onEdit={handleEditOpen} 
           onDelete={handleDeleteOpen} 
+          onRowClick={handleRowClick}
         />
       )}
+
+      {/* Detail Dialog Modal */}
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+              <Laptop className="h-5 w-5 text-[#c9a342]" />
+              Hardware Asset Details
+            </DialogTitle>
+            <DialogDescription className="text-sm font-medium text-muted-foreground">
+              Detailed information about this hardware asset.
+            </DialogDescription>
+          </DialogHeader>
+
+          {detailLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : detailItem ? (
+            <div className="space-y-6 py-2">
+              {/* Header Section */}
+              <div className="flex items-start justify-between border-b border-border pb-4">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-bold text-foreground">{detailItem.name}</h3>
+                  {detailItem.item_code && (
+                    <span className="font-mono text-[10px] text-[#c9a342] font-extrabold tracking-wider uppercase">
+                      <Hash className="h-3 w-3 inline mr-1" />
+                      {detailItem.item_code}
+                    </span>
+                  )}
+                </div>
+                {getStatusBadge(detailItem.status)}
+              </div>
+
+              {/* Detail Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Category */}
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                  <Tag className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Category</p>
+                    <p className="text-sm font-semibold text-foreground">{detailItem.category}</p>
+                  </div>
+                </div>
+
+                {/* Location / Room / Department */}
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Location</p>
+                    <div className="space-y-2">
+                      {detailItem.department && (
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">{detailItem.department.name}</p>
+                          <p className="text-[10px] text-muted-foreground font-medium">Department</p>
+                        </div>
+                      )}
+                      {detailItem.location && (
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">{detailItem.location.name}</p>
+                          <p className="text-[10px] text-muted-foreground font-medium">({detailItem.location.type})</p>
+                        </div>
+                      )}
+                      {detailItem.room && (
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">Room {detailItem.room.room_number}</p>
+                          {detailItem.room.floor && (
+                            <p className="text-[10px] text-muted-foreground font-medium">{detailItem.room.floor}</p>
+                          )}
+                        </div>
+                      )}
+                      {!detailItem.department && !detailItem.location && !detailItem.room && (
+                        <p className="text-sm text-muted-foreground/50">—</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Assigned Staff */}
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                  <User className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Assigned To</p>
+                    {detailItem.staff ? (
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{detailItem.staff.full_name}</p>
+                        {detailItem.staff.department_id?.name && (
+                          <p className="text-[10px] text-muted-foreground font-medium">{detailItem.staff.department_id.name}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground/50 font-semibold">Unassigned</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Vendor */}
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                  <Briefcase className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Vendor Partner</p>
+                    {detailItem.vendor ? (
+                      <p className="text-sm font-semibold text-foreground">{detailItem.vendor.name}</p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground/50 font-semibold">—</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Description Section */}
+              {detailItem.description && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Description</p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-muted/40 border border-border/50">
+                    <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{detailItem.description}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-sm text-muted-foreground font-medium">Asset details not found.</p>
+            </div>
+          )}
+
+          <DialogFooter className="border-t border-border pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setDetailOpen(false)}
+              className="h-9 px-4 rounded-lg"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Form Dialog Modal (Create/Edit) */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
@@ -356,20 +580,6 @@ export default function HardwarePage() {
           <DialogHeader>
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/10 text-rose-500 mb-2">
               <AlertTriangle className="h-6 w-6" />
-            </div>
-            {/* Department Dropdown */}
-            <div className="flex items-center gap-2 shrink-0">
-              <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
-              <select
-                value={departmentFilter}
-                onChange={(e) => setDepartmentFilter(e.target.value)}
-                className="flex h-10 w-48 rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <option value="ALL">All Departments</option>
-                {departmentOptions.map((dept) => (
-                  <option key={dept} value={dept}>{dept}</option>
-                ))}
-              </select>
             </div>
             <DialogTitle className="text-center text-lg font-bold text-foreground">
               Delete Hardware Asset?

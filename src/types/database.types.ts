@@ -93,6 +93,7 @@ export type Hardware = {
   status: 'ACTIVE' | 'BROKEN' | 'REPAIR' | 'DISPOSED';
   staff_id?: string;
   vendor_id?: string;
+  description?: string;
   created_at?: string;
   updated_at?: string;
 };

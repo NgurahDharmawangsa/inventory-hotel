@@ -1,4 +1,4 @@
-import { SecurityRepository, SecurityWithRelations } from "@/repositories/security.repository";
+import { SecurityRepository, SecurityWithRelations, LocationRoomOption } from "@/repositories/security.repository";
 import { SecurityValidator } from "@/validators/security.validator";
 import { Security } from "@/types/database.types";
 
@@ -6,8 +6,11 @@ export class SecurityService {
   /**
    * Fetch all security devices.
    */
-  static async getAllDevices(filters?: { query?: string }): Promise<SecurityWithRelations[]> {
-    return await SecurityRepository.findAll(filters);
+  static async getAllDevices(filters?: { query?: string; location?: string }): Promise<SecurityWithRelations[]> {
+    return await SecurityRepository.findAll({
+      query: filters?.query?.trim(),
+      location: filters?.location || undefined,
+    });
   }
 
   /**
@@ -37,6 +40,13 @@ export class SecurityService {
     }
     const validatedData = SecurityValidator.validateUpdate(data);
     return await SecurityRepository.update(id, validatedData);
+  }
+
+  /**
+   * Fetch distinct locations and rooms for the filter dropdown.
+   */
+  static async getDistinctLocations(): Promise<LocationRoomOption[]> {
+    return SecurityRepository.findDistinctLocations();
   }
 
   /**

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { HardwareService } from "@/services/hardware.service";
+import { LocationRoomOption } from "@/repositories/hardware.repository";
 import { supabase } from "@/lib/supabase";
 
 export type ActionResponse<T> = 
@@ -62,7 +63,7 @@ export async function deleteHardwareAction(id: string): Promise<ActionResponse<v
 /**
  * Action to fetch distinct hardware locations.
  */
-export async function getHardwareLocationsAction(): Promise<ActionResponse<string[]>> {
+export async function getHardwareLocationsAction(): Promise<ActionResponse<LocationRoomOption[]>> {
   try {
     const locations = await HardwareService.getDistinctLocations();
     return { success: true, data: locations };
@@ -80,6 +81,18 @@ export async function getHardwareDepartmentOptionsAction(): Promise<ActionRespon
     return { success: true, data: departments };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to fetch department options." };
+  }
+}
+
+/**
+ * Action to fetch a single hardware asset detail by ID.
+ */
+export async function getHardwareDetailAction(id: string): Promise<ActionResponse<any>> {
+  try {
+    const data = await HardwareService.getHardwareById(id);
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to fetch hardware detail." };
   }
 }
 

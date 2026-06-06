@@ -44,6 +44,7 @@ export function HardwareForm({
   const [status, setStatus] = useState(initialData?.status || "ACTIVE");
   const [staffId, setStaffId] = useState(initialData?.staff_id || "");
   const [vendorId, setVendorId] = useState(initialData?.vendor_id || "");
+  const [description, setDescription] = useState(initialData?.description || "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +73,8 @@ export function HardwareForm({
       room_id: roomId === "" ? null : roomId,
       status,
       staff_id: staffId === "" ? null : staffId,
-      vendor_id: vendorId === "" ? null : vendorId
+      vendor_id: vendorId === "" ? null : vendorId,
+      description: description.trim() || null
     };
 
     try {
@@ -248,6 +250,22 @@ export function HardwareForm({
             </select>
             {locationId && <p className="text-xs text-muted-foreground">Disabled (Location selected)</p>}
           </div>
+        </div>
+
+        {/* Description */}
+        <div className="space-y-1">
+          <label htmlFor="description" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+            Description
+          </label>
+          <textarea
+            id="description"
+            placeholder="Optional notes, specifications, or remarks about this asset..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            disabled={loading}
+            rows={3}
+            className="flex w-full rounded-lg border border-input bg-card px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 resize-none"
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
