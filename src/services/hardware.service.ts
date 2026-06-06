@@ -1,4 +1,4 @@
-import { HardwareRepository, HardwareWithRelations } from "@/repositories/hardware.repository";
+import { HardwareRepository, HardwareWithRelations, LocationRoomOption } from "@/repositories/hardware.repository";
 import { Hardware } from "@/types/database.types";
 import { HardwareValidator } from "@/validators/hardware.validator";
 
@@ -43,7 +43,7 @@ export class HardwareService {
   /**
    * Fetch distinct hardware locations.
    */
-  static async getDistinctLocations(): Promise<string[]> {
+  static async getDistinctLocations(): Promise<LocationRoomOption[]> {
     return HardwareRepository.findDistinctLocations();
   }
 

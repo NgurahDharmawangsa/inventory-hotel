@@ -34,7 +34,10 @@ export class HardwareValidator {
       throw new Error("Cannot assign both location and room. Please select only one.");
     }
 
-    // 5. Sanitize and return full object
+    // 5. Sanitize description
+    const description = data.description?.trim() || null;
+
+    // 6. Sanitize and return full object
     return {
       item_code: data.item_code?.trim() || null,
       name,
@@ -44,7 +47,8 @@ export class HardwareValidator {
       room_id: data.room_id && data.room_id !== "" ? data.room_id : null,
       status: status as ValidStatus,
       staff_id: data.staff_id && data.staff_id !== "" ? data.staff_id : null,
-      vendor_id: data.vendor_id && data.vendor_id !== "" ? data.vendor_id : null
+      vendor_id: data.vendor_id && data.vendor_id !== "" ? data.vendor_id : null,
+      description
     } as any;
   }
 
@@ -101,7 +105,12 @@ export class HardwareValidator {
       sanitizedData.room_id = data.room_id && data.room_id !== "" ? data.room_id : null;
     }
 
-    // 7. Staff & Vendor associations
+    // 7. Description
+    if (data.description !== undefined) {
+      sanitizedData.description = data.description?.trim() || null;
+    }
+
+    // 8. Staff & Vendor associations
     if (data.staff_id !== undefined) {
       sanitizedData.staff_id = data.staff_id && data.staff_id !== "" ? data.staff_id : null;
     }

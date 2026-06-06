@@ -115,6 +115,35 @@ export function flattenForExport(data: any[]): any[] {
 }
 
 /**
+ * Flatten hardware data for CSV/JSON export.
+ * Strips all raw ID fields and nested IDs, keeping only meaningful display names.
+ */
+export function flattenHardwareForExport(data: any[]): any[] {
+  return data.map((item) => {
+    const row: Record<string, any> = {};
+
+    // Basic fields (skip raw IDs)
+    row["Name"] = item.name ?? "";
+    row["Item Code"] = item.item_code ?? "";
+    row["Category"] = item.category ?? "";
+    row["Status"] = item.status ?? "";
+    row["Department"] = item.department?.name ?? "";
+    row["Location"] = item.location?.name ?? "";
+    row["Location Type"] = item.location?.type ?? "";
+    row["Room"] = item.room?.room_number ?? "";
+    row["Room Floor"] = item.room?.floor ?? "";
+    row["Assigned To"] = item.staff?.full_name ?? "";
+    row["Employee ID"] = item.staff?.employee_id ?? "";
+    row["Vendor"] = item.vendor?.name ?? "";
+    row["Description"] = item.description ?? "";
+    row["Created At"] = formatDateTimeForExport(item.created_at);
+    row["Updated At"] = formatDateTimeForExport(item.updated_at);
+
+    return row;
+  });
+}
+
+/**
  * Generate filename with timestamp
  */
 export function generateExportFilename(prefix: string): string {
