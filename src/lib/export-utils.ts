@@ -144,6 +144,53 @@ export function flattenHardwareForExport(data: any[]): any[] {
 }
 
 /**
+ * Compute expiration status label from date string
+ */
+function getExpirationStatus(dateString: string | null | undefined): string {
+  if (!dateString) return "Lifetime";
+  const days = getDaysRemaining(dateString);
+  if (days === null) return "Lifetime";
+  if (days < 0) return "Expired";
+  if (days <= 30) return "Expiring Soon";
+  return "Active";
+}
+
+/**
+ * Calculate days remaining from now until a given date string.
+ */
+function getDaysRemaining(dateString: string | null | undefined): number | null {
+  if (!dateString) return null;
+  const now = new Date();
+  const expDate = new Date(dateString);
+  if (isNaN(expDate.getTime())) return null;
+  const diffTime = expDate.getTime() - now.getTime();
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Flatten software license data for CSV/JSON export.
+ * Strips all raw ID fields and nested IDs, keeping only meaningful display names.
+ */
+export function flattenSoftwareForExport(data: any[]): any[] {
+  return data.map((item) => {
+    const row: Record<string, any> = {};
+
+    row["Name"] = item.name ?? "";
+    row["Item Code"] = item.item_code ?? "";
+    row["License Key"] = item.license_key ?? "";
+    row["Expiration Date"] = formatDateForExport(item.expiration_date);
+    row["Expiration Status"] = getExpirationStatus(item.expiration_date);
+    row["Assigned To"] = item.staff?.full_name ?? "";
+    row["Staff Department"] = item.staff?.department_id?.name ?? "";
+    row["Vendor"] = item.vendor?.name ?? "";
+    row["Created At"] = formatDateTimeForExport(item.created_at);
+    row["Updated At"] = formatDateTimeForExport(item.updated_at);
+
+    return row;
+  });
+}
+
+/**
  * Generate filename with timestamp
  */
 export function generateExportFilename(prefix: string): string {

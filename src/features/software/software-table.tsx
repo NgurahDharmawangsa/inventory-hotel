@@ -19,9 +19,10 @@ interface SoftwareTableProps {
   items: SoftwareWithRelations[];
   onEdit: (item: SoftwareWithRelations) => void;
   onDelete: (id: string) => void;
+  onViewDetail?: (item: SoftwareWithRelations) => void;
 }
 
-export function SoftwareTable({ items, onEdit, onDelete }: SoftwareTableProps) {
+export function SoftwareTable({ items, onEdit, onDelete, onViewDetail }: SoftwareTableProps) {
   const [sortColumn, setSortColumn] = React.useState<string | null>(null);
   const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("asc");
   const [visibleKeys, setVisibleKeys] = React.useState<Record<string, boolean>>({});
@@ -180,8 +181,11 @@ export function SoftwareTable({ items, onEdit, onDelete }: SoftwareTableProps) {
               <TableRow key={item.id} className="group hover:bg-muted/40 transition-colors">
                 {/* Software Name */}
                 <TableCell className="pl-4 py-3">
-                  <div className="flex flex-col leading-tight">
-                    <span className="font-semibold text-foreground">{item.name}</span>
+                  <div 
+                    className="flex flex-col leading-tight cursor-pointer"
+                    onClick={() => onViewDetail?.(item)}
+                  >
+                    <span className="font-semibold text-foreground hover:text-[#c9a342] transition-colors">{item.name}</span>
                     {item.item_code && (
                       <span className="font-mono text-[9.5px] text-[#c9a342] font-extrabold mt-0.5 tracking-wider uppercase">
                         {item.item_code}
@@ -230,7 +234,7 @@ export function SoftwareTable({ items, onEdit, onDelete }: SoftwareTableProps) {
                   <div className="flex flex-col leading-tight gap-1">
                     <span className="font-medium text-foreground/80 flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5 text-muted-foreground/60 animate-none" />
-                      {formatDate(item.expiration_date)}
+                      {item.expiration_date ? formatDate(item.expiration_date) : "Lifetime"}
                     </span>
                     {getExpirationBadge(item.expiration_date)}
                   </div>

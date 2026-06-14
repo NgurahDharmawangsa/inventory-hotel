@@ -49,7 +49,7 @@ export function SoftwareForm({
       item_code: itemCode.trim() || undefined,
       name: name.trim(),
       license_key: licenseKey.trim() || undefined,
-      expiration_date: expirationDate || undefined,
+      expiration_date: expirationDate || null,
       staff_id: staffId === "" ? null : staffId,
       vendor_id: vendorId === "" ? null : vendorId
     };
