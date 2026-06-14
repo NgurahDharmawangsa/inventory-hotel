@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
   getSoftwareAction, 
   deleteSoftwareAction 
@@ -9,7 +9,9 @@ import {
 import { getRelationsAction } from "@/app/actions/hardware";
 import { SoftwareWithRelations } from "@/repositories/software.repository";
 import { SoftwareTable } from "@/features/software/software-table";
+import { SoftwareDetailModal } from "@/features/software/software-detail-modal";
 import { SoftwareForm } from "@/features/software/software-form";
+import { SoftwareStatsCards } from "@/features/software/software-stats-cards";
 import { SoftwareTableSkeleton } from "@/features/software/software-skeleton";
 import { Button } from "@/components/ui/button";
 import { 
@@ -21,12 +23,24 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { 
-  Plus, 
-  Search, 
-  Loader2, 
-  X,
-  AlertTriangle
+   Plus, 
+   Search, 
+   Loader2, 
+   X,
+   AlertTriangle,
+   Download,
+   FileDown,
+   FileJson,
+   Filter
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { exportToCSV, exportToJSON, flattenSoftwareForExport, generateExportFilename } from "@/lib/export-utils";
+import { getDaysRemaining } from "@/utils/date";
 
 export default function SoftwarePage() {
   // Data states
@@ -37,11 +51,40 @@ export default function SoftwarePage() {
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
+  const [expirationFilter, setExpirationFilter] = useState("ALL");
+  const [vendorFilter, setVendorFilter] = useState("ALL");
+
+  // Helper: compute expiration status
+  const getExpirationStatus = (dateStr: string | null | undefined): string => {
+    if (!dateStr) return "LIFETIME";
+    const days = getDaysRemaining(dateStr);
+    if (days === null) return "LIFETIME";
+    if (days < 0) return "EXPIRED";
+    if (days <= 30) return "EXPIRING_SOON";
+    return "ACTIVE";
+  };
+
+  // Filter items client-side by expiration status and vendor
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      // Expiration filter
+      if (expirationFilter !== "ALL" && getExpirationStatus(item.expiration_date) !== expirationFilter) {
+        return false;
+      }
+      // Vendor filter
+      if (vendorFilter !== "ALL" && item.vendor_id !== vendorFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [items, expirationFilter, vendorFilter]);
 
   // Dialog states
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SoftwareWithRelations | null>(null);
+  const [detailItem, setDetailItem] = useState<SoftwareWithRelations | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -96,6 +139,11 @@ export default function SoftwarePage() {
   const handleCreateOpen = () => {
     setSelectedItem(null);
     setFormOpen(true);
+  };
+
+  const handleViewDetail = (item: SoftwareWithRelations) => {
+    setDetailItem(item);
+    setDetailOpen(true);
   };
 
   const handleEditOpen = (item: SoftwareWithRelations) => {
@@ -159,14 +207,58 @@ export default function SoftwarePage() {
             Monitor, register, and assign hotel software licenses, keys, and subscription expirations.
           </p>
         </div>
-        <Button 
-          onClick={handleCreateOpen}
-          className="h-10 px-4 rounded-lg bg-primary text-primary-foreground font-semibold flex items-center gap-2 shadow-sm hover:bg-primary/90 shrink-0 w-fit"
-        >
-          <Plus className="h-4 w-4" />
-          Register New License
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Export Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline"
+                className="h-10 px-4 rounded-lg font-semibold flex items-center gap-2 shadow-sm shrink-0"
+              >
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem 
+                onClick={() => {
+                  const filename = generateExportFilename("software-licenses");
+                  const flattenedData = flattenSoftwareForExport(items);
+                  exportToCSV(flattenedData, filename);
+                  showNotification("success", "Software data exported to CSV successfully!");
+                }}
+                className="cursor-pointer"
+              >
+                <FileDown className="h-4 w-4 mr-2" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => {
+                  const filename = generateExportFilename("software-licenses");
+                  const flattenedData = flattenSoftwareForExport(items);
+                  exportToJSON(flattenedData, filename);
+                  showNotification("success", "Software data exported to JSON successfully!");
+                }}
+                className="cursor-pointer"
+              >
+                <FileJson className="h-4 w-4 mr-2" />
+                Export as JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button 
+            onClick={handleCreateOpen}
+            className="h-10 px-4 rounded-lg bg-primary text-primary-foreground font-semibold flex items-center gap-2 shadow-sm hover:bg-primary/90 shrink-0 w-fit"
+          >
+            <Plus className="h-4 w-4" />
+            Register New License
+          </Button>
+        </div>
       </div>
+
+      {/* Stats Cards */}
+      <SoftwareStatsCards items={items} />
 
       {/* Filters Bar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -181,18 +273,57 @@ export default function SoftwarePage() {
             className="flex h-10 w-full rounded-lg border border-input bg-card pl-10 pr-4 text-sm shadow-xs transition-colors placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </div>
+
+        {/* Expiration Status Dropdown */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
+          <select
+            value={expirationFilter}
+            onChange={(e) => setExpirationFilter(e.target.value)}
+            className="flex h-10 w-44 rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="ALL">All Expiration</option>
+            <option value="ACTIVE">Active</option>
+            <option value="EXPIRING_SOON">Expiring Soon (≤30d)</option>
+            <option value="EXPIRED">Expired</option>
+            <option value="LIFETIME">Lifetime</option>
+          </select>
+        </div>
+
+        {/* Vendor Dropdown */}
+        <div className="flex items-center gap-2 shrink-0">
+          <select
+            value={vendorFilter}
+            onChange={(e) => setVendorFilter(e.target.value)}
+            className="flex h-10 w-44 rounded-lg border border-input bg-card px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="ALL">All Vendors</option>
+            {vendors.map((v) => (
+              <option key={v.id} value={v.id}>{v.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Main Table view */}
+        {/* Main Table view */}
       {loading ? (
         <SoftwareTableSkeleton />
       ) : (
         <SoftwareTable 
-          items={items} 
+          items={filteredItems} 
           onEdit={handleEditOpen} 
-          onDelete={handleDeleteOpen} 
+          onDelete={handleDeleteOpen}
+          onViewDetail={handleViewDetail}
         />
       )}
+
+      {/* Detail Modal */}
+      <SoftwareDetailModal
+        item={detailItem}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onEdit={handleEditOpen}
+      />
 
       {/* Form Dialog Modal (Create/Edit) */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
@@ -207,7 +338,7 @@ export default function SoftwarePage() {
           </DialogHeader>
           <div className="py-2">
             <SoftwareForm
-              initialData={selectedItem}
+              initialData={selectedItem || undefined}
               staffList={staff}
               vendorList={vendors}
               onSuccess={handleFormSuccess}
