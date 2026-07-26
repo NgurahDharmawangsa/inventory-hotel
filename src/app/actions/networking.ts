@@ -8,7 +8,7 @@ export type ActionResponse<T> =
   | { success: true; data: T } 
   | { success: false; error: string };
 
-export async function getNetworkingAction(filters?: { query?: string; location?: string }): Promise<ActionResponse<any>> {
+export async function getNetworkingAction(filters?: { query?: string; location?: string; status?: string; device_type?: string }): Promise<ActionResponse<any>> {
   try {
     const data = await NetworkingService.getAllDevices(filters);
     return { success: true, data };
@@ -43,6 +43,15 @@ export async function updateNetworkingAction(id: string, data: any): Promise<Act
     return { success: true, data: updatedDevice };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to update networking device." };
+  }
+}
+
+export async function getNetworkingDetailAction(id: string): Promise<ActionResponse<any>> {
+  try {
+    const device = await NetworkingService.getDeviceById(id);
+    return { success: true, data: device };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to retrieve networking device details." };
   }
 }
 

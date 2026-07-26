@@ -6,10 +6,12 @@ export class NetworkingService {
   /**
    * Fetch all networking devices.
    */
-  static async getAllDevices(filters?: { query?: string; location?: string }): Promise<NetworkingWithRelations[]> {
+  static async getAllDevices(filters?: { query?: string; location?: string; status?: string; device_type?: string }): Promise<NetworkingWithRelations[]> {
     return await NetworkingRepository.findAll({
       query: filters?.query?.trim(),
       location: filters?.location || undefined,
+      status: filters?.status || undefined,
+      device_type: filters?.device_type || undefined,
     });
   }
 

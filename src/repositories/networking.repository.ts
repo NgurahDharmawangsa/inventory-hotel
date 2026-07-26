@@ -32,7 +32,7 @@ export class NetworkingRepository {
   /**
    * Fetch all networking items with optional filters and vendor relation joined.
    */
-  static async findAll(filters?: { query?: string; location?: string }): Promise<NetworkingWithRelations[]> {
+  static async findAll(filters?: { query?: string; location?: string; status?: string; device_type?: string }): Promise<NetworkingWithRelations[]> {
     let queryBuilder = supabase
       .from("networking")
       .select(`
@@ -43,6 +43,14 @@ export class NetworkingRepository {
         room:room_id (id, room_number, floor)
       `)
       .order("created_at", { ascending: false });
+
+    if (filters?.status) {
+      queryBuilder = queryBuilder.eq("status", filters.status);
+    }
+
+    if (filters?.device_type) {
+      queryBuilder = queryBuilder.eq("device_type", filters.device_type);
+    }
 
     if (filters?.location) {
       if (filters.location.startsWith("room:")) {
