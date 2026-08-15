@@ -216,6 +216,30 @@ export function flattenNetworkingForExport(data: any[]): any[] {
 }
 
 /**
+ * Flatten security device data for CSV/JSON export.
+ * Strips all raw ID fields, keeping only meaningful display names.
+ */
+export function flattenSecurityForExport(data: any[]): any[] {
+  return data.map((item) => {
+    const row: Record<string, any> = {};
+
+    row["Device Type"] = item.device_type ?? "";
+    row["Item Code"] = item.item_code ?? "";
+    row["Status"] = item.status ?? "";
+    row["Department"] = item.department?.name ?? "";
+    row["Location"] = item.location?.name ?? "";
+    row["Location Type"] = item.location?.type ?? "";
+    row["Room"] = item.room?.room_number ?? "";
+    row["Room Floor"] = item.room?.floor ?? "";
+    row["Vendor"] = item.vendor?.name ?? "";
+    row["Created At"] = formatDateTimeForExport(item.created_at);
+    row["Updated At"] = formatDateTimeForExport(item.updated_at);
+
+    return row;
+  });
+}
+
+/**
  * Generate filename with timestamp
  */
 export function generateExportFilename(prefix: string): string {

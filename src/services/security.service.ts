@@ -6,10 +6,12 @@ export class SecurityService {
   /**
    * Fetch all security devices.
    */
-  static async getAllDevices(filters?: { query?: string; location?: string }): Promise<SecurityWithRelations[]> {
+  static async getAllDevices(filters?: { query?: string; location?: string; device_type?: string; status?: string }): Promise<SecurityWithRelations[]> {
     return await SecurityRepository.findAll({
       query: filters?.query?.trim(),
       location: filters?.location || undefined,
+      device_type: filters?.device_type || undefined,
+      status: filters?.status || undefined,
     });
   }
 

@@ -32,7 +32,7 @@ export class SecurityRepository {
   /**
    * Fetch all security items with optional filters and vendor relation joined.
    */
-  static async findAll(filters?: { query?: string; location?: string }): Promise<SecurityWithRelations[]> {
+  static async findAll(filters?: { query?: string; location?: string; device_type?: string; status?: string }): Promise<SecurityWithRelations[]> {
     let queryBuilder = supabase
       .from("security")
       .select(`
@@ -63,6 +63,14 @@ export class SecurityRepository {
         const ids = matchedLocations?.map((l: { id: string }) => l.id) ?? [];
         queryBuilder = queryBuilder.in("location_id", ids.length > 0 ? ids : [null]);
       }
+    }
+
+    if (filters?.device_type) {
+      queryBuilder = queryBuilder.eq("device_type", filters.device_type);
+    }
+
+    if (filters?.status) {
+      queryBuilder = queryBuilder.eq("status", filters.status);
     }
 
     if (filters?.query) {
