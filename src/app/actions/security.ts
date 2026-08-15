@@ -8,11 +8,13 @@ export type ActionResponse<T> =
   | { success: true; data: T } 
   | { success: false; error: string };
 
-export async function getSecurityAction(filters?: { query?: string; location?: string }): Promise<ActionResponse<any>> {
+export async function getSecurityAction(filters?: { query?: string; location?: string; device_type?: string; status?: string }): Promise<ActionResponse<any>> {
   try {
     const data = await SecurityService.getAllDevices({
       query: filters?.query?.trim(),
       location: filters?.location || undefined,
+      device_type: filters?.device_type || undefined,
+      status: filters?.status || undefined,
     });
     return { success: true, data };
   } catch (err: any) {
